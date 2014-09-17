@@ -3,20 +3,19 @@
 """ This is the entry point for PM.
 """
 from cement.core import foundation, handler
-from pm.core import BaseController
-from pm.core.storage import StorageController
+from pm.core import controllers
 
 class PmApp(foundation.CementApp):
     class Meta:
         label = 'PM'
-        base_controller = BaseController
+        base_controller = controllers.BaseController
 
 # Create the main app
 app = PmApp()
 
 try:
     # Register handlers
-    handler.register(StorageController)
+    handler.register(controllers.StorageController)
 
     # Setup and run the application
     app.setup()
