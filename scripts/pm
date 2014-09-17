@@ -3,13 +3,36 @@
 """ This is the entry point for PM.
 """
 
-from cement.core import foundation
+from cement.core import backend, foundation, controller, handler
 
-app = foundation.CementApp('pm')
+hello_message = "Welcome to Project Management tools!"
+
+# define an application base controller
+class BaseController(controller.CementBaseController):
+    class Meta:
+        label = 'base'
+        description = hello_message
+
+    # This is for testing purposes. As it is hidden, won't show in --help
+    @controller.expose(hide=True, help="Prints a hello message")
+    def hello(self):
+        self.app.log.info(hello_message)
+
+
+class PmApp(foundation.CementApp):
+    class Meta:
+        label = 'pm'
+        base_controller = BaseController
+
+# Create the main app
+app = PmApp()
 
 try:
+    # setup the application
     app.setup()
+
+    # run the application
     app.run()
-    print "Welcome to the new PM!"
 finally:
+    # close the app
     app.close()
