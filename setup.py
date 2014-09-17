@@ -3,6 +3,12 @@ import sys, os
 
 version = '1.0'
 
+try:
+    with open("requirements.txt", "r") as f:
+        install_requires = [x.strip() for x in f.readlines()]
+except IOError:
+    install_requires = []
+
 setup(name='pm',
       version=version,
       description="Project and Data management for NGI Sweden",
@@ -17,6 +23,5 @@ setup(name='pm',
       packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
       include_package_data=True,
       zip_safe=False,
-      install_requires=[
-          # -*- Extra requirements: -*-
-      ])
+      install_requires=install_requires
+      )
