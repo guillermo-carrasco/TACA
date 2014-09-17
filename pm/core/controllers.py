@@ -1,3 +1,6 @@
+""" PM controllers
+"""
+
 from cement.core import controller
 
 hello_message = "Welcome to Project Management tools!"
