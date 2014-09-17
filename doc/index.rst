@@ -9,7 +9,7 @@ Welcome to PM's documentation!
 This is the documentation for PM.
 
 PM stands for Project Management, and basically it is a set of tools used in the
-`National Genomics Infrastructure<https://portal.scilifelab.se/genomics/>` for easing
+`National Genomics Infrastructure`_ for easing
 the day-to-day tasks of managing and organizing projects and data.
 
 .. toctree::
@@ -24,3 +24,6 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
+.. EXTERNAL LINKS
+
+.. _National Genomics Infrastructure: https://portal.scilifelab.se/genomics/
