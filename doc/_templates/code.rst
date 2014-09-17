@@ -2,19 +2,19 @@ Source code documentation
 =========================
 
 pm
-==
+--
 
 .. automodule:: pm
     :members:
 
 pm.core
-=======
+-------
 
 .. automodule:: pm.core
     :members:
 
-Controllers
------------
+pm.core.controllers
+-------------------
 
 .. automodule:: pm.core.controllers
     :members:
@@ -22,8 +22,8 @@ Controllers
 .. automodule:: pm.core.storage
     :members:
 
-Storage
-=======
+pm.storage
+----------
 
 .. automodule:: pm.storage
     :members:
