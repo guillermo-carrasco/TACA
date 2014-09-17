@@ -5,4 +5,6 @@ For a more detailed documentation please go to [the documentation page](http://p
 
 ### Contributors
 
+* [Per Unneberg](https://github.com/percyfal) - _The whole codebase is based on his first implementation [here](https://github.com/percyfal/scilifelab/tree/master/scilifelab/pm)_
+
 * [Guillermo Carrasco](https://github.com/guillermo-carrasco)
