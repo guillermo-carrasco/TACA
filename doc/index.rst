@@ -12,17 +12,19 @@ PM stands for Project Management, and basically it is a set of tools used in the
 `National Genomics Infrastructure`_ for easing
 the day-to-day tasks of managing and organizing projects and data.
 
+Contents:
+
 .. toctree::
    :maxdepth: 2
 
+   _templates/contribute
+   _templates/code
 
 
 Indices and tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
 
 .. EXTERNAL LINKS
 
