@@ -69,7 +69,8 @@ Remember that you can use the -h option any time, at any command level, to get
 information about the available commands.
 
 Subcontrollers
-_______________
+--------------
+
 The main controllers are unstacked, i.e. their arguments are specific to each controller. 
 However, one can also add stacked controllers that add arguments to the main controllers.
 
