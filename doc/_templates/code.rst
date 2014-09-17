@@ -22,8 +22,8 @@ pm.core.controllers
 .. automodule:: pm.core.storage
     :members:
 
-pm.storage
-----------
+pm.core.storage
+----------------
 
-.. automodule:: pm.storage
+.. automodule:: pm.core.storage
     :members:
