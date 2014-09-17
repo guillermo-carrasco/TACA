@@ -2,22 +2,24 @@
 
 """ This is the entry point for PM.
 """
-from cement.core import foundation
+from cement.core import foundation, handler
 from pm.core import BaseController
+from pm.core.storage import StorageController
 
 class PmApp(foundation.CementApp):
     class Meta:
-        label = 'pm'
+        label = 'PM'
         base_controller = BaseController
 
 # Create the main app
 app = PmApp()
 
 try:
-    # setup the application
-    app.setup()
+    # Register handlers
+    handler.register(StorageController)
 
-    # run the application
+    # Setup and run the application
+    app.setup()
     app.run()
 finally:
     # close the app
