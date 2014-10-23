@@ -8,13 +8,13 @@ Following there is a description of the basic steps you need to follow to add co
 
 Controllers
 -----------
-*NOTE: adding a controller requires modification to the main application script pm.*
+**NOTE:** *adding a controller requires modification to the main application script ``pm.*``
 
-Assume you want to create a controller `mycommand`. Create a file called `mycommand.py` 
-and place it in pm/core/controllers. Create then a doc string.
+Assume you want to create a controller ``mycommand``. Create a file called ``mycommand.py`` 
+and place it in ``pm/core/controllers``. Remember to create a doc string.
 
 
-The `BaseController` is an interface, ensuring that all `pm` controllers behave similarly. 
+The ``BaseController`` is an interface, ensuring that all ``pm`` controllers behave similarly. 
 The minimum boilerplate code needed to define your new controller is:
 
 .. code-block:: python
@@ -35,7 +35,7 @@ The minimum boilerplate code needed to define your new controller is:
         def default(self):
             pass
 
-To add subcommands, add functions decorated with `@controller.expose`:
+To add subcommands, add functions decorated with ``@controller.expose``:
 
 .. code-block:: python
 
@@ -52,7 +52,7 @@ import the newly defined command:
 
     from pm.core.controllers import MycommandController
 
-Then, before the application is setup (`app.setup()`) the command needs to be registered:
+Then, before the application is setup (``app.setup()``) the command needs to be registered:
 
 .. code-block:: python
 
@@ -65,16 +65,16 @@ The new command can now be accessed as:
     pm mycommand
     pm mycommand mysubcommand
 
-Remember that you can use the -h option any time, at any command level, to get 
+Remember that you can use the ``-h`` option any time, at any command level, to get 
 information about the available commands.
 
 Subcontrollers
 --------------
 
-The main controllers are unstacked, i.e. their arguments are specific to each controller. 
+The main controllers are unstacked, *i.e.* their arguments are specific to each controller. 
 However, one can also add stacked controllers that add arguments to the main controllers.
 
-To add a subcontroller to `mycommand.py`, add:
+To add a subcontroller to ``mycommand.py``, add:
 
 .. code-block:: python
 
