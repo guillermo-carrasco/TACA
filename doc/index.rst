@@ -18,8 +18,8 @@ Contents:
    :maxdepth: 2
 
    _templates/contribute
-   _templates/code
    _templates/reports
+   _templates/code
 
 
 Indices and tables
