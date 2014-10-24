@@ -56,7 +56,7 @@ Looking to the Future
 ---------------------
 It's possible that in the future we may also offer reports in other formats,
 such as HMTL. As such, if all assets can be generated in HTML-friendly formats
-*(ie. ``.png`` or ``.svg`` files instead of ``.pdf`` graphs)*, that could
+(ie. ``.png`` or ``.svg`` files instead of ``.pdf`` graphs), that could
 save work in the future..
 
 
