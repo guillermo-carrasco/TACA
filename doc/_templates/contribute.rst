@@ -8,7 +8,7 @@ Following there is a description of the basic steps you need to follow to add co
 
 Controllers
 -----------
-**NOTE:** *adding a controller requires modification to the main application script ``pm.*``
+**NOTE:** *adding a controller requires modification to the main application script* ``pm``.
 
 Assume you want to create a controller ``mycommand``. Create a file called ``mycommand.py`` 
 and place it in ``pm/core/controllers``. Remember to create a doc string.
