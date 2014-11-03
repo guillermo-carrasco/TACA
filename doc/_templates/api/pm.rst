@@ -7,6 +7,8 @@ Subpackages
 .. toctree::
 
     pm.core
+    pm.log
+    pm.utils
 
 Submodules
 ----------
