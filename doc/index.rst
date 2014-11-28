@@ -19,7 +19,7 @@ Contents:
 
    _templates/contribute
    _templates/reports
-   _templates/api/pm
+   _templates/api/modules
 
 
 Indices and tables
