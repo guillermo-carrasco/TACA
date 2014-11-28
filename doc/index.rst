@@ -18,7 +18,7 @@ Contents:
    :maxdepth: 2
 
    _templates/contribute
-   _templates/reports
+   _templates/scripts/index
    _templates/api/modules
 
 
