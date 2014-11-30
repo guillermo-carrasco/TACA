@@ -18,7 +18,8 @@ Contents:
    :maxdepth: 2
 
    _templates/contribute
-   _templates/api/pm
+   _templates/scripts/index
+   _templates/api/modules
 
 
 Indices and tables

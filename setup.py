@@ -23,6 +23,6 @@ setup(name='pm',
       packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
       include_package_data=True,
       zip_safe=False,
-      scripts=['scripts/pm'],
+      scripts=['scripts/pm', 'scripts/run_tracker.py'],
       install_requires=install_requires
       )
