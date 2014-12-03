@@ -158,8 +158,7 @@ def get_base_mask_from_samplesheet(run, config):
         except IOError:
             LOG.warn('No SampleSheet found for run {}, demultiplexing without SampleSheet'.format(os.path.basename(run)))
         else:
-            ss = os.path.join(run, 'SampleSheet.csv')
-            ss = csv.DictReader(open(ss, 'rb'), delimiter=',')
+            ss = csv.DictReader(open('SampleSheet.csv', 'rb'), delimiter=',')
             samplesheet = []
             [samplesheet.append(read) for read in ss]
 
