@@ -10,15 +10,19 @@ class PmApp(foundation.CementApp):
         label = 'PM'
         base_controller = controllers.BaseController
 
-# Create the main app
+# Create the main application
 app = PmApp()
 
 try:
     # Register handlers
     handler.register(controllers.StorageController)
 
-    # Setup and run the application
+    # Setup the application
     app.setup()
+
+    # Add any common arguments to all handlers
+    app.args.add_argument('-c', '--config', type=str, help="Path to the configuration file")
+
     app.run()
 finally:
     # close the app
