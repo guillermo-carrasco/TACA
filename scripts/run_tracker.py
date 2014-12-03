@@ -297,12 +297,8 @@ def run_bcl2fastq(run, config):
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description=DESCRIPTION)
-    parser.add_argument('--config', type=str, help='Config file for the NGI pipeline')
+    parser.add_argument('--config', type=str, required=True, help='Config file for the NGI pipeline')
     args = parser.parse_args()
-    
-    if not args.config:
-        # Will raise RuntimeError if not config file is found
-        args.config = cf.locate_ngi_config()
 
     config = cf.load_yaml_config(args.config)
     check_config_options(config)
