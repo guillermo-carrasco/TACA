@@ -1,7 +1,6 @@
 """ Load and parse configuration file
 """
 import ConfigParser
-import json
 import os
 import yaml
 
