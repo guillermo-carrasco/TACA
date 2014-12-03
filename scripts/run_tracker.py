@@ -8,9 +8,9 @@ import subprocess
 
 from datetime import datetime
 
-from ngi_pipeline.log import loggers
-from ngi_pipeline.utils import config as cf
-from ngi_pipeline.utils.filesystem import chdir
+from pm.log import loggers
+from pm.utils.filesystem import chdir
+from pm.utils import config as cf
 from pm.utils import parsers
 
 DESCRIPTION =(" Script to keep track and pre-process Illumina X Ten runs. "
