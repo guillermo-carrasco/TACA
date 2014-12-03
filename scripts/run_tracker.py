@@ -162,8 +162,6 @@ def get_base_mask_from_samplesheet(run, config):
             samplesheet = []
             [samplesheet.append(read) for read in ss]
 
-            #Create the basemask for each group
-            #for index_size, index_group in base_masks.iteritems():
             index_size = len(samplesheet[0]['Index'].replace('-', '').replace('NoIndex', ''))
             per_index_size = index_size / (int(parsers.last_index_read(run)) - 1)
 
@@ -262,9 +260,15 @@ def run_bcl2fastq(run, config):
             cl.extend(['--minimum-trimmed-reads', minimum])
         if cl_options.get('tiles'):
             cl.extend(['--tiles', cl_options.get('tiles')])
-        #XXX I guess that this one will be deduced from the Samplesheet
+
+        # Base mask deduced from the samplesheet if not specified in the config file
         if cl_options.get('use-base-mask'):
             cl.extend(['--use-base-mask', cl_options.get('use-base-mask')])
+        else:
+            bm = get_base_mask_from_samplesheet(run, config)
+            if bm:
+                cl.extend(['--use-base-mask', ','.join(bm)])
+
         if cl_options.get('with-failed-reads'):
             cl.append('--with-failed-reads')
         if cl_options.get('write-fastq-reverse-complement'):
