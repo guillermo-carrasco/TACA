@@ -3,6 +3,7 @@ import argparse
 import csv
 import glob
 import os
+import shutil
 import subprocess
 
 from datetime import datetime
@@ -10,6 +11,7 @@ from datetime import datetime
 from ngi_pipeline.log import loggers
 from ngi_pipeline.utils import config as cf
 from ngi_pipeline.utils.filesystem import chdir
+from pm.utils import parsers
 
 DESCRIPTION =(" Script to keep track and pre-process Illumina X Ten runs. "
 
@@ -129,6 +131,68 @@ def transfer_run(run, config):
         with open(config['transfer_file'], 'a') as tf:
             tsv_writer = csv.writer(tf, delimiter='\t')
             tsv_writer.writerow([os.path.basename(run), str(datetime.now())])
+
+
+def get_base_mask_from_samplesheet(run, config):
+    """Get the base mask to use with bcl2fastq based on the run configuration
+    on the file RunInfo.xml
+
+    NOTE: No weird indexes configurations contemplated in this implementation. I.e
+    the method will not work with different index lengths in different lanes, will
+    always pick up the index of lane 1
+
+    :param str run: Path to the run directory
+    :returns: The corresponding base mask or empty string if no Samplesheet found
+    :rtype: str
+    """
+    runsetup = parsers.get_run_configuration(run)
+    base_mask = ''
+
+    # Get index size from SampleSheet. Samplesheets are located in a shared partition
+    # so first we have to retrieve it. It has the name of the flowcell, but bcl2fastq
+    # needs to find it as SampleSheet.csv, so we just copy it with that name
+    with chdir(run):
+        fc_name = run.split('_')[-1][1:] # Run format: YYMMDD_INSTRUMENT-ID_EXPERIMENT-NUMBER_FCPOSITION-FCID
+        try:
+            shutil.copy(os.path.join(config.get('samplesheets_dir'), fc_name + '.csv'), 'SampleSheet.csv')
+        except IOError:
+            LOG.warn('No SampleSheet found for run {}, demultiplexing without SampleSheet'.format(os.path.basename(run)))
+        else:
+            ss = os.path.join(run, 'SampleSheet.csv')
+            ss = csv.DictReader(open(ss, 'rb'), delimiter=',')
+            samplesheet = []
+            [samplesheet.append(read) for read in ss]
+
+            #Create the basemask for each group
+            #for index_size, index_group in base_masks.iteritems():
+            index_size = len(samplesheet[0]['Index'].replace('-', '').replace('NoIndex', ''))
+            bm = []
+            per_index_size = index_size / (int(parsers.last_index_read(run)) - 1)
+
+            for read in runsetup:
+                cycles = read['NumCycles']
+                if read['IsIndexedRead'] == 'N':
+                    bm.append('Y' + cycles)
+                else:
+                    # I_iN_y(,I_iN_y) or I(,I)
+                    if index_size > int(cycles):
+                        i_remainder = int(cycles) - per_index_size
+                        if i_remainder > 0:
+                            bm.append('I' + str(per_index_size) + 'N' + str(i_remainder))
+                        else:
+                            bm.append('I' + cycles)
+                    # I_iN_y(,N) or I(,N)
+                    else:
+                        if index_size > 0:
+                            to_mask = "I" + str(index_size)
+                            if index_size < int(cycles):
+                               to_mask = to_mask + 'N' + str(int(cycles) - index_size)
+                            bm.append(to_mask)
+                            index_size = 0
+                        else:
+                            bm.append('N' + cycles)
+                base_masks[group]['base_mask'] = bm
+    return base_mask
 
 
 def run_bcl2fastq(run, config):
