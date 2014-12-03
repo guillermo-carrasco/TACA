@@ -36,5 +36,5 @@ def last_index_read(run):
     :returns: Highest index read
     :rtype: int
     """
-    read_numbers = [int(read.get("Number", 0)) for read in _get_read_configuration(directory) if read.get("IsIndexedRead", "") == "Y"]
+    read_numbers = [int(read.get("Number", 0)) for read in get_read_configuration(run) if read.get("IsIndexedRead", "") == "Y"]
     return 0 if len(read_numbers) == 0 else max(read_numbers)

@@ -146,7 +146,7 @@ def get_base_mask_from_samplesheet(run, config):
     :rtype: str
     """
     runsetup = parsers.get_read_configuration(run)
-    base_mask = ''
+    bm = []
 
     # Get index size from SampleSheet. Samplesheets are located in a shared partition
     # so first we have to retrieve it. It has the name of the flowcell, but bcl2fastq
@@ -154,7 +154,7 @@ def get_base_mask_from_samplesheet(run, config):
     with chdir(run):
         fc_name = run.split('_')[-1][1:] # Run format: YYMMDD_INSTRUMENT-ID_EXPERIMENT-NUMBER_FCPOSITION-FCID
         try:
-            shutil.copy(os.path.join(config.get('samplesheets_dir'), datetime.now().year, fc_name + '.csv'), 'SampleSheet.csv')
+            shutil.copy(os.path.join(config.get('samplesheets_dir'), str(datetime.now().year), fc_name + '.csv'), 'SampleSheet.csv')
         except IOError:
             LOG.warn('No SampleSheet found for run {}, demultiplexing without SampleSheet'.format(os.path.basename(run)))
         else:
@@ -166,7 +166,6 @@ def get_base_mask_from_samplesheet(run, config):
             #Create the basemask for each group
             #for index_size, index_group in base_masks.iteritems():
             index_size = len(samplesheet[0]['Index'].replace('-', '').replace('NoIndex', ''))
-            bm = []
             per_index_size = index_size / (int(parsers.last_index_read(run)) - 1)
 
             for read in runsetup:
@@ -191,8 +190,7 @@ def get_base_mask_from_samplesheet(run, config):
                             index_size = 0
                         else:
                             bm.append('N' + cycles)
-                base_masks[group]['base_mask'] = bm
-    return base_mask
+    return bm
 
 
 def run_bcl2fastq(run, config):
