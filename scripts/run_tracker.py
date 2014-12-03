@@ -145,7 +145,7 @@ def get_base_mask_from_samplesheet(run, config):
     :returns: The corresponding base mask or empty string if no Samplesheet found
     :rtype: str
     """
-    runsetup = parsers.get_run_configuration(run)
+    runsetup = parsers.get_read_configuration(run)
     base_mask = ''
 
     # Get index size from SampleSheet. Samplesheets are located in a shared partition
@@ -154,7 +154,7 @@ def get_base_mask_from_samplesheet(run, config):
     with chdir(run):
         fc_name = run.split('_')[-1][1:] # Run format: YYMMDD_INSTRUMENT-ID_EXPERIMENT-NUMBER_FCPOSITION-FCID
         try:
-            shutil.copy(os.path.join(config.get('samplesheets_dir'), fc_name + '.csv'), 'SampleSheet.csv')
+            shutil.copy(os.path.join(config.get('samplesheets_dir'), datetime.now().year, fc_name + '.csv'), 'SampleSheet.csv')
         except IOError:
             LOG.warn('No SampleSheet found for run {}, demultiplexing without SampleSheet'.format(os.path.basename(run)))
         else:
