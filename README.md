@@ -1,5 +1,6 @@
 ## PM - Project Management
 
+[![Build Status](https://travis-ci.org/SciLifeLab/pm.svg?branch=master)](https://travis-ci.org/SciLifeLab/pm)
 [![Documentation Status](https://readthedocs.org/projects/project-management/badge/?version=latest)](https://readthedocs.org/projects/project-management/?badge=latest)
 
 This package contains several tools for projects and data management in the [National Genomics Infrastructure](https://portal.scilifelab.se/genomics/) in Stockholm, Sweden.

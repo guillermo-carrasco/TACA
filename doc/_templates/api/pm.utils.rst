@@ -20,6 +20,22 @@ pm.utils.dry module
     :undoc-members:
     :show-inheritance:
 
+pm.utils.filesystem module
+--------------------------
+
+.. automodule:: pm.utils.filesystem
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+pm.utils.parsers module
+-----------------------
+
+.. automodule:: pm.utils.parsers
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 Module contents
 ---------------
