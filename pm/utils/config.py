@@ -33,8 +33,7 @@ def load_yaml_config(config_file):
     """
     try:
         with open(config_file, 'r') as f:
-            config = yaml.load(f)
-        return config
+            return yaml.load(f)
     except IOError as e:
         e.message = "Could not open configuration file \"{}\".".format(config_file)
         raise e
