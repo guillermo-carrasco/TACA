@@ -3,13 +3,15 @@ import argparse
 import csv
 import glob
 import os
+import shutil
 import subprocess
 
 from datetime import datetime
 
-from ngi_pipeline.log import loggers
-from ngi_pipeline.utils import config as cf
-from ngi_pipeline.utils.filesystem import chdir
+from pm.log import loggers
+from pm.utils.filesystem import chdir
+from pm.utils import config as cf
+from pm.utils import parsers
 
 DESCRIPTION =(" Script to keep track and pre-process Illumina X Ten runs. "
 
@@ -131,6 +133,63 @@ def transfer_run(run, config):
             tsv_writer.writerow([os.path.basename(run), str(datetime.now())])
 
 
+def get_base_mask_from_samplesheet(run, config):
+    """Get the base mask to use with bcl2fastq based on the run configuration
+    on the file RunInfo.xml
+
+    NOTE: No weird indexes configurations contemplated in this implementation. I.e
+    the method will not work with different index lengths in different lanes, will
+    always pick up the index of lane 1
+
+    :param str run: Path to the run directory
+    :returns: The corresponding base mask or empty string if no Samplesheet found
+    :rtype: str
+    """
+    runsetup = parsers.get_read_configuration(run)
+    bm = []
+
+    # Get index size from SampleSheet. Samplesheets are located in a shared partition
+    # so first we have to retrieve it. It has the name of the flowcell, but bcl2fastq
+    # needs to find it as SampleSheet.csv, so we just copy it with that name
+    with chdir(run):
+        fc_name = run.split('_')[-1][1:] # Run format: YYMMDD_INSTRUMENT-ID_EXPERIMENT-NUMBER_FCPOSITION-FCID
+        try:
+            shutil.copy(os.path.join(config.get('samplesheets_dir'), str(datetime.now().year), fc_name + '.csv'), 'SampleSheet.csv')
+        except IOError:
+            LOG.warn('No SampleSheet found for run {}, demultiplexing without SampleSheet'.format(os.path.basename(run)))
+        else:
+            ss = csv.DictReader(open('SampleSheet.csv', 'rb'), delimiter=',')
+            samplesheet = []
+            [samplesheet.append(read) for read in ss]
+
+            index_size = len(samplesheet[0]['Index'].replace('-', '').replace('NoIndex', ''))
+            per_index_size = index_size / (int(parsers.last_index_read(run)) - 1)
+
+            for read in runsetup:
+                cycles = read['NumCycles']
+                if read['IsIndexedRead'] == 'N':
+                    bm.append('Y' + cycles)
+                else:
+                    # I_iN_y(,I_iN_y) or I(,I)
+                    if index_size > int(cycles):
+                        i_remainder = int(cycles) - per_index_size
+                        if i_remainder > 0:
+                            bm.append('I' + str(per_index_size) + 'N' + str(i_remainder))
+                        else:
+                            bm.append('I' + cycles)
+                    # I_iN_y(,N) or I(,N)
+                    else:
+                        if index_size > 0:
+                            to_mask = "I" + str(index_size)
+                            if index_size < int(cycles):
+                               to_mask = to_mask + 'N' + str(int(cycles) - index_size)
+                            bm.append(to_mask)
+                            index_size = 0
+                        else:
+                            bm.append('N' + cycles)
+    return bm
+
+
 def run_bcl2fastq(run, config):
     """ Runs bcl2fast with the parameters found in the configuration file. After
     that, demultiplexed FASTQ files are sent to the analysis server.
@@ -201,9 +260,15 @@ def run_bcl2fastq(run, config):
             cl.extend(['--minimum-trimmed-reads', minimum])
         if cl_options.get('tiles'):
             cl.extend(['--tiles', cl_options.get('tiles')])
-        #XXX I guess that this one will be deduced from the Samplesheet
+
+        # Base mask deduced from the samplesheet if not specified in the config file
         if cl_options.get('use-base-mask'):
             cl.extend(['--use-base-mask', cl_options.get('use-base-mask')])
+        else:
+            bm = get_base_mask_from_samplesheet(run, config)
+            if bm:
+                cl.extend(['--use-base-mask', ','.join(bm)])
+
         if cl_options.get('with-failed-reads'):
             cl.append('--with-failed-reads')
         if cl_options.get('write-fastq-reverse-complement'):
@@ -233,12 +298,8 @@ def run_bcl2fastq(run, config):
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description=DESCRIPTION)
-    parser.add_argument('--config', type=str, help='Config file for the NGI pipeline')
+    parser.add_argument('--config', type=str, required=True, help='Config file for the NGI pipeline')
     args = parser.parse_args()
-    
-    if not args.config:
-        # Will raise RuntimeError if not config file is found
-        args.config = cf.locate_ngi_config()
 
     config = cf.load_yaml_config(args.config)
     check_config_options(config)
