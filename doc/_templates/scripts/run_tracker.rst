@@ -13,3 +13,34 @@ to know what is the status of the run and act accordingly.
 The following flow chart summarizes the workflow of this script.
 
 .. image:: ../../_static/figures/run_tracker_flowchart.png
+
+
+The script requires the following options in a configuration file to run:
+
+.. code-block:: yaml
+
+    preprocessing:
+        hiseq_data_dir: /path/to/hiseq/data
+        miseq_dat_dir: /path/to/miseq/data
+        # MFS server to put metadata in
+        mfs: /path/to/mfs/partition
+        # File with info about already transfered runs
+        transfer_file: /path/to/transfer/file
+        # Location of samplesheets for demultiplexing
+        samplesheets_dir: /path/to/samplesheets/dir
+        bcl2fastq: 
+            path: /path/to/bcl2fastq
+            - all command line options of bcl2fastq , i.e runfolder, input-dir, etc.
+        sync:
+            user: remote_user_analysis_server
+            host: analysis_server
+            data_archive: /path/where/to/transfer/data
+            include:
+                - "files"
+                - "to"
+                - "include"
+                - "in"
+                - "the"
+                - "transfer"
+
+Call the script like this for a default run: ``run_tracker.py --config config.yaml``
