@@ -161,17 +161,22 @@ def trigger_analysis(run, config):
         url = "http://{}:{}/flowcell_analysis/{}".format(config['analysis']['host'],
                                                          config['analysis']['port'],
                                                          os.path.basename(run))
-        r = requests.get(url)
-        if r.status_code != requests.status_codes.codes.OK:
+        try:
+            r = requests.get(url)
+            if r.status_code != requests.status_codes.codes.OK:
+                LOG.warn(("Something went wrong when triggering the analysis of {}. Please "
+                          "check the logfile and make sure to start the analysis!".format(os.path.basename(run))))
+            else:
+                LOG.info('Analysis of flowcell {} triggered in {}'.format(os.path.basename(run),
+                                                                          config['analysis']['host']))
+                a_file = os.path.join(config['status_dir'], 'analysis.tsv')
+                with open(a_file, 'a') as af:
+                    tsv_writer = csv.writer(af, delimiter='\t')
+                    tsv_writer.writerow([os.path.basename(run), str(datetime.now())])
+        except requests.exceptions.ConnectionError:
             LOG.warn(("Something went wrong when triggering the analysis of {}. Please "
                       "check the logfile and make sure to start the analysis!".format(os.path.basename(run))))
-        else:
-            LOG.info('Analysis of flowcell {} triggered in {}'.format(os.path.basename(run),
-                                                                      config['analysis']['host']))
-            a_file = os.path.join(config['status_dir'], 'analysis.tsv')
-            with open(a_file, 'a') as af:
-                tsv_writer = csv.writer(af, delimiter='\t')
-                tsv_writer.writerow([os.path.basename(run), str(datetime.now())])
+
 
 
 
