@@ -24,8 +24,8 @@ The script requires the following options in a configuration file to run:
         miseq_dat_dir: /path/to/miseq/data
         # MFS server to put metadata in
         mfs: /path/to/mfs/partition
-        # File with info about already transfered runs
-        transfer_file: /path/to/transfer/file
+        # Directory where to find status files for transfers and analysis
+        status_dir: /path/to/status_dir
         # Location of samplesheets for demultiplexing
         samplesheets_dir: /path/to/samplesheets/dir
         bcl2fastq: 
@@ -42,5 +42,9 @@ The script requires the following options in a configuration file to run:
                 - "in"
                 - "the"
                 - "transfer"
+        analysis:
+            host: analysis_server
+            port: port
+            url: url_to_start_flowcell_analysis
 
 Call the script like this for a default run: ``run_tracker.py --config config.yaml``

@@ -6,6 +6,8 @@ import os
 import shutil
 import subprocess
 
+import requests
+
 from datetime import datetime
 
 from pm.log import loggers
@@ -35,6 +37,7 @@ def check_config_options(config):
         config['preprocessing']['miseq_data']
         config['preprocessing']['mfs']
         config['preprocessing']['bcl2fastq']['path']
+        config['preprocessing']['status_dir']
         config['preprocessing']['samplesheets_dir']
         config['preprocessing']['sync']
         config['preprocessing']['sync']['user']
@@ -89,13 +92,14 @@ def is_transferred(run, transfer_file):
         return False
 
 
-def transfer_run(run, config):
+def transfer_run(run, config, analysis=True):
     """ Transfer a run to the analysis server. Will add group R/W permissions to
     the run directory in the destination server so that the run can be processed
     by any user/account in that group (i.e a functional account...)
 
     :param str run: Run directory
     :param dict config: Parsed configuration
+    :param bool analysis: Trigger analysis on remote server
     """
 
     with chdir(run):
@@ -128,10 +132,41 @@ def transfer_run(run, config):
                                                         os.path.basename(run), str(e.returncode)))
                 raise e
 
-        LOG.info('Adding run {} to {}'.format(os.path.basename(run), config['transfer_file']))
-        with open(config['transfer_file'], 'a') as tf:
+        t_file = os.path.join(config['status_dir'], 'transfer.tsv')
+        LOG.info('Adding run {} to {}'.format(os.path.basename(run), t_file))
+        with open(t_file, 'a') as tf:
             tsv_writer = csv.writer(tf, delimiter='\t')
             tsv_writer.writerow([os.path.basename(run), str(datetime.now())])
+
+        if analysis:
+            trigger_analysis(run, config)
+
+
+def trigger_analysis(run, config):
+    """ Trigger the analysis of the flowcell in the analysis sever.
+
+    :param str run: Run directory
+    :param dict config: Parsed configuration
+    """
+    if not config.get('analysis'):
+        LOG.warn(("No configuration found for remote analysis server. Not triggering"
+                  "analysis of {}".format(os.path.basename(run))))
+    else:
+        url = "http://{}:{}/flowcell_analysis/{}".format(config['analysis']['host'],
+                                                         config['analysis']['port'],
+                                                         os.path.basename(run))
+        r = requests.get(url)
+        if r.status_code != requests.status_codes.codes.OK:
+            LOG.warn(("Something went wrong when triggering the analysis of {}. Please "
+                      "check the logfile and make sure to start the analysis!".format(os.path.basename(run))))
+        else:
+            LOG.info('Analysis of flowcell {} triggered in {}'.format(os.path.basename(run),
+                                                                      config['analysis']['host']))
+            a_file = os.path.join(config['status_dir'], 'analysis.tsv')
+            with open(a_file, 'a') as af:
+                tsv_writer = csv.writer(af, delimiter='\t')
+                tsv_writer.writerow([os.path.basename(run), str(datetime.now())])
+
 
 
 def get_base_mask_from_samplesheet(run, config):
@@ -320,9 +355,11 @@ if __name__=="__main__":
                 LOG.info(("BCL conversion and demultiplexing process in progress for "
                     "run {}, skipping it".format(run_name)))
             elif status == 'COMPLETED':
-                LOG.info(("Processing of run {} if finished, check if run has been "
+                LOG.info(("Preprocessing of run {} if finished, check if run has been "
                     "transferred and transfer it otherwise".format(run_name)))
-                transferred = is_transferred(run_name, config['transfer_file'])
+
+                t_file = os.path.join(config['status_dir'], 'transfer.tsv')
+                transferred = is_transferred(run_name, t_file)
                 if not transferred:
                     LOG.info("Run {} hasn't been transferred yet.".format(run_name))
                     LOG.info('Transferring run {} to {} into {}'.format(run_name,
