@@ -87,7 +87,9 @@ def is_transferred(run, transfer_file):
                 #Rows have two columns: run and transfer date
                 if row[0] == run:
                     return True
-            return False
+        if os.path.exists(os.path.join(run, '.transferring')):
+            return True
+        return False
     except IOError:
         return False
 
@@ -120,6 +122,8 @@ def transfer_run(run, config, analysis=True):
 
         with open('rsync.out', 'w') as rsync_out, open('rsync.err', 'w') as rsync_err:
             try:
+                # Create temp file indicating that the run is being transferred
+                open('.transferring', 'w').close()
                 started = ("Started transfer of run {} on {}".format(os.path.basename(run), datetime.now()))
                 LOG.info(started)
                 rsync_out.write(started + '\n')
@@ -130,6 +134,7 @@ def transfer_run(run, config, analysis=True):
                 error_msg = ("Transfer for run {} FAILED (exit code {}), "
                              "please check log files rsync.out and rsync.err".format(
                                                         os.path.basename(run), str(e.returncode)))
+                shutil.rmtree('.transferring')
                 raise e
 
         t_file = os.path.join(config['status_dir'], 'transfer.tsv')
@@ -137,6 +142,7 @@ def transfer_run(run, config, analysis=True):
         with open(t_file, 'a') as tf:
             tsv_writer = csv.writer(tf, delimiter='\t')
             tsv_writer.writerow([os.path.basename(run), str(datetime.now())])
+        shutil.rmtree('.transferring')
 
         if analysis:
             trigger_analysis(run, config)
