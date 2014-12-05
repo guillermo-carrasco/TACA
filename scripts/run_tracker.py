@@ -134,7 +134,7 @@ def transfer_run(run, config, analysis=True):
                 error_msg = ("Transfer for run {} FAILED (exit code {}), "
                              "please check log files rsync.out and rsync.err".format(
                                                         os.path.basename(run), str(e.returncode)))
-                shutil.rmtree('.transferring')
+                os.remove('.transferring')
                 raise e
 
         t_file = os.path.join(config['status_dir'], 'transfer.tsv')
@@ -142,7 +142,7 @@ def transfer_run(run, config, analysis=True):
         with open(t_file, 'a') as tf:
             tsv_writer = csv.writer(tf, delimiter='\t')
             tsv_writer.writerow([os.path.basename(run), str(datetime.now())])
-        shutil.rmtree('.transferring')
+        os.remove('.transferring')
 
         if analysis:
             trigger_analysis(run, config)
