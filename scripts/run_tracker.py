@@ -87,7 +87,6 @@ def is_transferred(run, transfer_file):
                 #Rows have two columns: run and transfer date
                 if row[0] == run:
                     return True
-        import ipdb; ipdb.set_trace()
         if os.path.exists(os.path.join(run, 'transferring')):
             return True
         return False
