@@ -35,6 +35,7 @@ def check_config_options(config):
         config['preprocessing']['miseq_data']
         config['preprocessing']['mfs']
         config['preprocessing']['bcl2fastq']['path']
+        config['preprocessing']['samplesheets_dir']
         config['preprocessing']['sync']
         config['preprocessing']['sync']['user']
         config['preprocessing']['sync']['host']
