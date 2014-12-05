@@ -87,7 +87,8 @@ def is_transferred(run, transfer_file):
                 #Rows have two columns: run and transfer date
                 if row[0] == run:
                     return True
-        if os.path.exists(os.path.join(run, '.transferring')):
+        import ipdb; ipdb.set_trace()
+        if os.path.exists(os.path.join(run, 'transferring')):
             return True
         return False
     except IOError:
@@ -123,7 +124,7 @@ def transfer_run(run, config, analysis=True):
         with open('rsync.out', 'w') as rsync_out, open('rsync.err', 'w') as rsync_err:
             try:
                 # Create temp file indicating that the run is being transferred
-                open('.transferring', 'w').close()
+                open('transferring', 'w').close()
                 started = ("Started transfer of run {} on {}".format(os.path.basename(run), datetime.now()))
                 LOG.info(started)
                 rsync_out.write(started + '\n')
@@ -134,7 +135,7 @@ def transfer_run(run, config, analysis=True):
                 error_msg = ("Transfer for run {} FAILED (exit code {}), "
                              "please check log files rsync.out and rsync.err".format(
                                                         os.path.basename(run), str(e.returncode)))
-                os.remove('.transferring')
+                os.remove('transferring')
                 raise e
 
         t_file = os.path.join(config['status_dir'], 'transfer.tsv')
@@ -142,7 +143,7 @@ def transfer_run(run, config, analysis=True):
         with open(t_file, 'a') as tf:
             tsv_writer = csv.writer(tf, delimiter='\t')
             tsv_writer.writerow([os.path.basename(run), str(datetime.now())])
-        os.remove('.transferring')
+        os.remove('transferring')
 
         if analysis:
             trigger_analysis(run, config)
@@ -366,7 +367,7 @@ if __name__=="__main__":
                 LOG.info(("BCL conversion and demultiplexing process in progress for "
                     "run {}, skipping it".format(run_name)))
             elif status == 'COMPLETED':
-                LOG.info(("Preprocessing of run {} if finished, check if run has been "
+                LOG.info(("Preprocessing of run {} is finished, check if run has been "
                     "transferred and transfer it otherwise".format(run_name)))
 
                 t_file = os.path.join(config['status_dir'], 'transfer.tsv')
