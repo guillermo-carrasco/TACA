@@ -85,7 +85,7 @@ def is_transferred(run, transfer_file):
             t_f = csv.reader(f, delimiter='\t')
             for row in t_f:
                 #Rows have two columns: run and transfer date
-                if row[0] == run:
+                if row[0] == os.path.basename(run):
                     return True
         if os.path.exists(os.path.join(run, 'transferring')):
             return True
@@ -370,7 +370,7 @@ if __name__=="__main__":
                     "transferred and transfer it otherwise".format(run_name)))
 
                 t_file = os.path.join(config['status_dir'], 'transfer.tsv')
-                transferred = is_transferred(run_name, t_file)
+                transferred = is_transferred(run, t_file)
                 if not transferred:
                     LOG.info("Run {} hasn't been transferred yet.".format(run_name))
                     LOG.info('Transferring run {} to {} into {}'.format(run_name,
