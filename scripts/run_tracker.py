@@ -309,12 +309,12 @@ def run_bcl2fastq(run, config):
             cl.extend(['--tiles', cl_options.get('tiles')])
 
         # Base mask deduced from the samplesheet if not specified in the config file
-        if cl_options.get('use-base-mask'):
-            cl.extend(['--use-base-mask', cl_options.get('use-base-mask')])
+        if cl_options.get('use-bases-mask'):
+            cl.extend(['--use-bases-mask', cl_options.get('use-bases-mask')])
         else:
             bm = get_base_mask_from_samplesheet(run, config)
             if bm:
-                cl.extend(['--use-base-mask', ','.join(bm)])
+                cl.extend(['--use-bases-mask', ','.join(bm)])
 
         if cl_options.get('with-failed-reads'):
             cl.append('--with-failed-reads')
