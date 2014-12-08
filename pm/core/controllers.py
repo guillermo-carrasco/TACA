@@ -2,10 +2,6 @@
 """
 from cement.core import controller
 
-from pm.log import loggers
-
-LOG = loggers.minimal_logger('PM Controllers')
-
 hello_message = "Welcome to Project Management tools!"
 
 class BaseController(controller.CementBaseController):

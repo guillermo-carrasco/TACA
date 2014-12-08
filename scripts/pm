@@ -2,13 +2,19 @@
 
 """ This is the entry point for PM.
 """
+import os
+
 from cement.core import foundation, handler
+from cement.ext.ext_yaml import YamlConfigHandler
 from pm.core import controllers
+
+CONFIG_FLIE = os.path.join(os.getenv('HOME'), '.pm', 'pm.yaml')
 
 class PmApp(foundation.CementApp):
     class Meta:
         label = 'PM'
         base_controller = controllers.BaseController
+        config_handler = YamlConfigHandler
 
 # Create the main application
 app = PmApp()
@@ -20,10 +26,11 @@ try:
     # Setup the application
     app.setup()
 
-    # Add any common arguments to all handlers
-    app.args.add_argument('-c', '--config', type=str, help="Path to the configuration file")
-
-    app.run()
+    # Run the application
+    if not app.config.parse_file(CONFIG_FLIE):
+        app.log.error('No config file {}; please create and set relevant config sections'.format(CONFIG_FLIE))
+    else:
+        app.run()
 finally:
     # close the app
     app.close()
