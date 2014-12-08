@@ -6,14 +6,15 @@ import os
 
 from cement.core import foundation, handler
 from cement.ext.ext_yaml import YamlConfigHandler
-from pm.core import controllers
+from pm.controllers import BaseController
+from pm.controllers import storage
 
 CONFIG_FLIE = os.path.join(os.getenv('HOME'), '.pm', 'pm.yaml')
 
 class PmApp(foundation.CementApp):
     class Meta:
         label = 'PM'
-        base_controller = controllers.BaseController
+        base_controller = BaseController
         config_handler = YamlConfigHandler
 
 # Create the main application
@@ -21,7 +22,7 @@ app = PmApp()
 
 try:
     # Register handlers
-    handler.register(controllers.StorageController)
+    handler.register(storage.StorageController)
 
     # Setup the application
     app.setup()

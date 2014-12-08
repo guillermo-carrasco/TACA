@@ -1,8 +1,8 @@
-""" PM controllers
+""" Core module.
+
+Place for controllers and other structural stuff.
 """
 from cement.core import controller
-
-hello_message = "Welcome to Project Management tools!"
 
 class BaseController(controller.CementBaseController):
     """ Define an application BaseController
@@ -12,7 +12,7 @@ class BaseController(controller.CementBaseController):
     """
     class Meta:
         label = 'base'
-        description = hello_message
+        description = "Project Management - A tool for miscellaneous tasks at NGI"
 
 
     @controller.expose(hide=True)
@@ -25,21 +25,4 @@ class BaseController(controller.CementBaseController):
 
         Will not be listed as an available option (--hide)
         """
-        self.app.log.info(hello_message)
-
-
-class StorageController(BaseController):
-    """ Storage Controller
-
-    Entry point for all functionalities related to storage
-    """
-    class Meta:
-        label = 'storage'
-        description = "Entry point for all functionalities related to storage"
-        stacked_on = 'base'
-        stacked_type = 'nested'
-
-
-    @controller.expose(help="Cleans old runs from the filesystem")
-    def cleanup(self):
-        raise NotImplementedError('To be implemented...')
+        self.app.log.info("Welcome to Project Management tools!")
