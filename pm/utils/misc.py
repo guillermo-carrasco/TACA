@@ -1,7 +1,7 @@
 """ Miscellaneous or general-use methods
 """
 from datetime import datetime
-import subrpocess
+import subprocess
 import sys
 
 def call_external_command(cl, with_log_files=False):
@@ -22,7 +22,7 @@ def call_external_command(cl, with_log_files=False):
         stdout.write(''.join(['=']*len(cl)) + '\n')
 
     try:
-        subrpocess.check_call(cl, stdout=stdout, stderr=stderr)
+        subprocess.check_call(cl, stdout=stdout, stderr=stderr)
     except subprocess.CalledProcessError, e:
         e.message = "The command {} failed.".format(' '.join(cl))
         raise e

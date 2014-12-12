@@ -87,7 +87,7 @@ def is_transferred(run, transfer_file):
                 #Rows have two columns: run and transfer date
                 if row[0] == os.path.basename(run):
                     return True
-        if os.path.exists(os.path.join(run, 'transferring')):
+        if os.path.exists(os.path.join(run, '.transferring')):
             return True
         return False
     except IOError:
@@ -121,7 +121,7 @@ def transfer_run(run, config, analysis=True):
         cl.extend([run, remote])
 
         # Create temp file indicating that the run is being transferred
-        open('transferring', 'w').close()
+        open('.transferring', 'w').close()
         started = ("Started transfer of run {} on {}".format(os.path.basename(run), datetime.now()))
         LOG.info(started)
         # In this particular case we want to capture the exception because we want
@@ -129,16 +129,15 @@ def transfer_run(run, config, analysis=True):
         try:
             misc.call_external_command(cl, with_log_files=True)
         except subprocess.CalledProcessError as e:
+            os.remove('.transferring')
             raise e
-        finally:
-            os.remove('transferring')
 
         t_file = os.path.join(config['status_dir'], 'transfer.tsv')
         LOG.info('Adding run {} to {}'.format(os.path.basename(run), t_file))
         with open(t_file, 'a') as tf:
             tsv_writer = csv.writer(tf, delimiter='\t')
             tsv_writer.writerow([os.path.basename(run), str(datetime.now())])
-        os.remove('transferring')
+        os.remove('.transferring')
 
         if analysis:
             trigger_analysis(run, config)
@@ -341,10 +340,16 @@ def run_bcl2fastq(run, config):
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description=DESCRIPTION)
-    parser.add_argument('--config', type=str, required=True, help='Config file for the NGI pipeline')
+    parser.add_argument('--config', type=str, help='Config file for the NGI pipeline')
     args = parser.parse_args()
 
-    config = cf.load_yaml_config(args.config)
+    if not args.config:
+        args.config = os.path.join(os.environ.get('HOME'), '.pm', 'pm.yaml')
+    try:
+        config = cf.load_yaml_config(args.config)
+    except IOError as e:
+        e.message = "No configuration file found in ~/.pm/pm.yaml or specified as parameter"
+        raise e
     check_config_options(config)
     config = config['preprocessing']
 
