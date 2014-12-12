@@ -316,21 +316,10 @@ def run_bcl2fastq(run, config):
         if cl_options.get('write-fastq-reverse-complement'):
             cl.append('--write-fastq-reverse-complement')
 
-        # Execute bcl conversion and demultiplexing
-        with open('bcl2fastq.out', 'w') as bcl_out, open('bcl2fastq.err', 'w') as bcl_err:
-            try:
-                started = ("BCL to FASTQ conversion and demultiplexing started for "
-                           " run {} on {}".format(os.path.basename(run), datetime.now()))
-                LOG.info(started)
-                bcl_out.write(started + '\n')
-                bcl_out.write('Command: {}\n'.format(' '.join(cl)))
-                bcl_out.write(''.join(['=']*len(cl)) + '\n')
-                subprocess.check_call(cl, stdout=bcl_out, stderr=bcl_err)
-            except subprocess.CalledProcessError, e:
-                error_msg = ("BCL to Fastq conversion for {} FAILED (exit code {}), "
-                             "please check log files bcl2fastq.out and bcl2fastq.err".format(
-                                                        os.path.basename(run), str(e.returncode)))
-                raise e
+        LOG.info(("BCL to FASTQ conversion and demultiplexing started for "
+                  " run {} on {}".format(os.path.basename(run), datetime.now())))
+        
+        misc.call_external_command(cl, with_log_files=True)
 
         LOG.info(("BCL to FASTQ conversion and demultiplexing finished for "
                   "run {} on {}".format(os.path.basename(run), datetime.now())))
