@@ -13,7 +13,7 @@ from datetime import datetime
 from pm.log import loggers
 from pm.utils.filesystem import chdir
 from pm.utils import config as cf
-from pm.utils import parsers
+from pm.utils import parsers, misc
 
 DESCRIPTION =(" Script to keep track and pre-process Illumina X Ten runs. "
 
@@ -120,22 +120,18 @@ def transfer_run(run, config, analysis=True):
         remote = "{}@{}:{}".format(r_user, r_host, r_dir)
         cl.extend([run, remote])
 
-        with open('rsync.out', 'w') as rsync_out, open('rsync.err', 'w') as rsync_err:
-            try:
-                # Create temp file indicating that the run is being transferred
-                open('transferring', 'w').close()
-                started = ("Started transfer of run {} on {}".format(os.path.basename(run), datetime.now()))
-                LOG.info(started)
-                rsync_out.write(started + '\n')
-                rsync_out.write('Command: {}\n'.format(' '.join(cl)))
-                rsync_out.write(''.join(['=']*len(cl)) + '\n')
-                subprocess.check_call(cl, stdout=rsync_out, stderr=rsync_err)
-            except subprocess.CalledProcessError, e:
-                error_msg = ("Transfer for run {} FAILED (exit code {}), "
-                             "please check log files rsync.out and rsync.err".format(
-                                                        os.path.basename(run), str(e.returncode)))
-                os.remove('transferring')
-                raise e
+        # Create temp file indicating that the run is being transferred
+        open('transferring', 'w').close()
+        started = ("Started transfer of run {} on {}".format(os.path.basename(run), datetime.now()))
+        LOG.info(started)
+        # In this particular case we want to capture the exception because we want
+        # to delete the transfer file
+        try:
+            misc.call_external_command(cl, with_log_files=True)
+        except subprocess.CalledProcessError as e:
+            raise e
+        finally:
+            os.remove('transferring')
 
         t_file = os.path.join(config['status_dir'], 'transfer.tsv')
         LOG.info('Adding run {} to {}'.format(os.path.basename(run), t_file))
