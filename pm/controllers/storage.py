@@ -4,6 +4,7 @@ import os
 import re
 
 from cement.core import controller
+from irods.session import iRODSSession
 
 from pm.controllers import BaseController
 from pm.utils import filesystem
@@ -60,6 +61,17 @@ class StorageController(BaseController):
 
         :param str run: Run directory
         """
+        # Initialize iRODS client
+        irods_credentials = self.app.config.get('storage', 'irods')
+        host = irods_credentials.get('irodsHost')
+        user = irods_credentials.get('irodsUserName')
+        port = irods_credentials.get('irodsPort')
+        zone = irods_credentials.get('irodsZone')
+        home = irods_credentials.get('irodsHome')
+        pwrd = irods_credentials.get('irodsPassword')
+        session = iRODSSession(host=host, port=port, user=user, password=pwrd, zone=zone)
+        swestore = s.collections.get(home)
+        import ipdb; ipdb.set_trace()
         if run.endswith('bz2'):
             self.app.log.info("Tarball")
             # XXX Check that md5sum exists, otherwise create it

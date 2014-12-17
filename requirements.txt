@@ -1,3 +1,4 @@
 cement
 pyyaml
 requests
+python-irodsclient
