@@ -2,9 +2,9 @@
 """
 import os
 import re
+import shutil
 
 from cement.core import controller
-from irods.session import iRODSSession
 
 from pm.controllers import BaseController
 from pm.utils import filesystem
@@ -61,21 +61,15 @@ class StorageController(BaseController):
 
         :param str run: Run directory
         """
-        # Initialize iRODS client
-        irods_credentials = self.app.config.get('storage', 'irods')
-        host = irods_credentials.get('irodsHost')
-        user = irods_credentials.get('irodsUserName')
-        port = irods_credentials.get('irodsPort')
-        zone = irods_credentials.get('irodsZone')
-        home = irods_credentials.get('irodsHome')
-        pwrd = irods_credentials.get('irodsPassword')
-        session = iRODSSession(host=host, port=port, user=user, password=pwrd, zone=zone)
-        swestore = s.collections.get(home)
-        import ipdb; ipdb.set_trace()
+        def _send_to_swestore(f, dest):
+            misc.call_external_command('iput -K -P {file} {dest}'.format(file=f, dest=dest))
+
         if run.endswith('bz2'):
-            self.app.log.info("Tarball")
-            # XXX Check that md5sum exists, otherwise create it
-            # XXX send tarball to swestore and check md5 and adler32
+            self.app.log.info("Sending tarball {} to swestore".format(run))
+            _send_to_swestore(run, self.app.config.get('storage', 'irodsHome'))
+            # XXX Check adler32 after being sent
+            self.app.log('Run {} send correctly and double-check was okay. Removing run'.format(run))
+            shutil.rmtree(run)
             pass
         else:
             self.app.log.info("Raw data")
