@@ -28,9 +28,14 @@ class StorageController(BaseController):
     # Storage subcommands #
     #######################
 
-    @controller.expose(help="Clean old runs from the filesystem")
+    @controller.expose(help="Move old runs to nosync directory so they're not synced to the processing server")
     def cleanup(self):
-        raise NotImplementedError('To be implemented...')
+        for data_dir in self.app.config.get('storage', 'data_dirs'):
+            with filesystem.chdir(data_dir):
+                for run in [r for r in os.listdir(data_dir) if re.match(filesystem.RUN_RE, r)]:
+                    if os.path.exists(os.path.join(run, 'RTAComplete.txt')):
+                        self.app.log.info('Moving run {} to nosync directory'.format(os.path.basename(run)))
+                        shutil.move(run, 'nosync')
 
 
     @controller.expose(help="Archive old runs to SWESTORE")
@@ -44,7 +49,7 @@ class StorageController(BaseController):
                 else:
                     self._archive_run(self.pargs.run)
             else:
-                self.app.log.error("The {} doesn't look like an Illumina run".format(os.path.basename(run)))
+                self.app.log.error("The name {} doesn't look like an Illumina run".format(os.path.basename(run)))
         # Otherwise find all runs in every data dir
         else:
             self.app.log.info("Archiving old runs to SWESTORE")
@@ -70,9 +75,8 @@ class StorageController(BaseController):
             # XXX Check adler32 after being sent
             self.app.log('Run {} send correctly and double-check was okay. Removing run'.format(run))
             shutil.rmtree(run)
-            pass
         else:
-            self.app.log.info("Raw data")
+            self.app.log.info("Compressing run {}".format(run))
             # Compress with pbzip2
             # Calculate md5sum
             # Send to swestore
