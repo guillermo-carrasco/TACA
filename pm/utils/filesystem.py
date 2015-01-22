@@ -3,7 +3,7 @@
 import contextlib
 import os
 
-RUN_RE = '\d{6}_[a-zA-Z\d]+_\d{4}_[AB][A-Z\d]{9}'
+RUN_RE = '\d{6}_[a-zA-Z\d\-]+_\d{4}_[AB][A-Z\d]{9}'
 
 @contextlib.contextmanager
 def chdir(new_dir):
