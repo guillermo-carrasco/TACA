@@ -79,8 +79,7 @@ class StorageController(BaseController):
             self.app.log.info("Sending {} to swestore".format(f))
             misc.call_external_command('iput -K -P {file} {dest}'.format(file=f, dest=dest),
                     with_log_files=True)
-            # XXX Check adler32
-            self.app.log.info('Run {} sent correctly and double-check was okay.'.format(f))
+            self.app.log.info('Run {} sent correctly and checksum was okay.'.format(f))
             if remove:
                 self.app.log.info('Removing run'.format(f))
                 os.remove(f)
