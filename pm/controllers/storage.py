@@ -83,7 +83,7 @@ class StorageController(BaseController):
             self.app.log.info('Run {} sent correctly and double-check was okay.'.format(f))
             if remove:
                 self.app.log.info('Removing run'.format(f))
-                shutil.rmtree(f)
+                os.remove(f)
 
 
         if run.endswith('bz2'):
