@@ -42,7 +42,7 @@ class StorageController(BaseController):
     def archive_to_swestore(self):
         # If the run is specified in the command line, check that exists and archive
         if self.app.pargs.run:
-            if re.match(filesystem.RUN_RE, os.path.basename(run)):
+            if re.match(filesystem.RUN_RE, os.path.basename(self.app.pargs.run)):
                 if not os.path.exists(self.app.pargs.run):
                     self.app.log.error(("Run {} not found. Please make sure to specify "
                         "the absolute path or relative path being in the correct directory.".format(self.app.pargs.run)))
@@ -70,12 +70,12 @@ class StorageController(BaseController):
         """
         def _send_to_swestore(f, dest):
             self.app.log.info('oh yeah!')
-            #misc.call_external_command('iput -K -P {file} {dest}'.format(file=f, dest=dest),
-            #        with_log_files=True)
+            misc.call_external_command('iput -K -P {file} {dest}'.format(file=f, dest=dest),
+                    with_log_files=True)
 
         if run.endswith('bz2'):
             self.app.log.info("Sending tarball {} to swestore".format(run))
-            _send_to_swestore(run, self.app.config.get('storage', 'irodsHome'))
+            _send_to_swestore(run, self.app.config.get('storage', 'irods', 'irodsHome'))
             # XXX Check adler32 after being sent
             self.app.log('Run {} send correctly and double-check was okay. Removing run'.format(run))
             shutil.rmtree(run)
@@ -88,4 +88,4 @@ class StorageController(BaseController):
             shutil.rmtree(run)
             # Send to swestore
             self.app.log.info("Sending tarball {}.tar.bz2 to swestore".format(run))
-            _send_to_swestore('{}.tar.bz2'.format(run), self.app.config.get('storage', 'irodsHome'))
+            _send_to_swestore('{}.tar.bz2'.format(run), self.app.config.get('storage', 'irods', 'irodsHome'))
