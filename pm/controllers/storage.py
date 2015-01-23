@@ -7,7 +7,7 @@ import shutil
 from cement.core import controller
 
 from pm.controllers import BaseController
-from pm.utils import filesystem
+from pm.utils import filesystem, misc
 
 class StorageController(BaseController):
     """ Storage Controller
@@ -50,13 +50,15 @@ class StorageController(BaseController):
                     self._archive_run(self.pargs.run)
             else:
                 self.app.log.error("The name {} doesn't look like an Illumina run".format(os.path.basename(run)))
-        # Otherwise find all runs in every data dir
+        # Otherwise find all runs in every data dir on the nosync partition
         else:
             self.app.log.info("Archiving old runs to SWESTORE")
             for data_dir in self.app.config.get('storage', 'data_dirs'):
-                self.app.log.info('Checking {} directory'.format(data_dir))
-                for run in [r for r in os.listdir(data_dir) if re.match(filesystem.RUN_RE, r)]:
-                    self._archive_run(run)
+                to_send_dir = os.path.join(data_dir, 'nosync')
+                self.app.log.info('Checking {} directory'.format(to_send_dir))
+                with filesystem.chdir(to_send_dir):
+                    for run in [r for r in os.listdir(to_send_dir) if re.match(filesystem.RUN_RE, r)]:
+                        self._archive_run(run)
 
     #############################################################
     # Class helper methods, not exposed as commands/subcommands #
@@ -67,7 +69,9 @@ class StorageController(BaseController):
         :param str run: Run directory
         """
         def _send_to_swestore(f, dest):
-            misc.call_external_command('iput -K -P {file} {dest}'.format(file=f, dest=dest))
+            self.app.log.info('oh yeah!')
+            #misc.call_external_command('iput -K -P {file} {dest}'.format(file=f, dest=dest),
+            #        with_log_files=True)
 
         if run.endswith('bz2'):
             self.app.log.info("Sending tarball {} to swestore".format(run))
@@ -77,7 +81,11 @@ class StorageController(BaseController):
             shutil.rmtree(run)
         else:
             self.app.log.info("Compressing run {}".format(run))
+            #import ipdb; ipdb.set_trace()
             # Compress with pbzip2
-            # Calculate md5sum
+            misc.call_external_command('tar cvzf {run}.tar.bz2 --use-compress-program=pbzip2 {run}'.format(run=run))
+            self.app.log.info('Run {} successfully compressed! Removing from disk...'.format(run))
+            shutil.rmtree(run)
             # Send to swestore
-            pass
+            self.app.log.info("Sending tarball {}.tar.bz2 to swestore".format(run))
+            _send_to_swestore('{}.tar.bz2'.format(run), self.app.config.get('storage', 'irodsHome'))

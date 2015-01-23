@@ -12,6 +12,8 @@ def call_external_command(cl, with_log_files=False):
     :param string cl: Command line to be executed (command + options and parameters)
     :param bool with_log_files: Create log files for stdout and stderr
     """
+    if type(cl) == str:
+        cl = cl.split(' ')
     command = os.path.basename(cl[0])
     stdout = sys.stdout
     stderr = sys.stderr
