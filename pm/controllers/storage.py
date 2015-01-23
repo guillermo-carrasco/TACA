@@ -83,7 +83,7 @@ class StorageController(BaseController):
             self.app.log.info("Compressing run {}".format(run))
             #import ipdb; ipdb.set_trace()
             # Compress with pbzip2
-            misc.call_external_command('tar cvzf {run}.tar.bz2 --use-compress-program=pbzip2 {run}'.format(run=run))
+            misc.call_external_command('tar --use-compress-program=pbzip2 -cf {run}.tar.bz2 {run}'.format(run=run))
             self.app.log.info('Run {} successfully compressed! Removing from disk...'.format(run))
             shutil.rmtree(run)
             # Send to swestore
