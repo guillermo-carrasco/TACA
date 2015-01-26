@@ -87,7 +87,7 @@ def is_transferred(run, transfer_file):
                 #Rows have two columns: run and transfer date
                 if row[0] == os.path.basename(run):
                     return True
-        if os.path.exists(os.path.join(run, '.transferring')):
+        if os.path.exists(os.path.join(run, 'transferring')):
             return True
         return False
     except IOError:
@@ -121,7 +121,7 @@ def transfer_run(run, config, analysis=True):
         cl.extend([run, remote])
 
         # Create temp file indicating that the run is being transferred
-        open('.transferring', 'w').close()
+        open('transferring', 'w').close()
         started = ("Started transfer of run {} on {}".format(os.path.basename(run), datetime.now()))
         LOG.info(started)
         # In this particular case we want to capture the exception because we want
@@ -129,7 +129,7 @@ def transfer_run(run, config, analysis=True):
         try:
             misc.call_external_command(cl, with_log_files=True)
         except subprocess.CalledProcessError as e:
-            os.remove('.transferring')
+            os.remove('transferring')
             raise e
 
         t_file = os.path.join(config['status_dir'], 'transfer.tsv')
@@ -137,7 +137,7 @@ def transfer_run(run, config, analysis=True):
         with open(t_file, 'a') as tf:
             tsv_writer = csv.writer(tf, delimiter='\t')
             tsv_writer.writerow([os.path.basename(run), str(datetime.now())])
-        os.remove('.transferring')
+        os.remove('transferring')
 
         if analysis:
             trigger_analysis(run, config)
