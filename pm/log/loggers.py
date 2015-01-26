@@ -29,7 +29,7 @@ def minimal_logger(namespace, config_file=None, to_file=True, debug=False):
     # File logger
     if to_file:
         cwd = os.path.dirname(os.path.realpath('.'))
-        log_path = os.path.join(os.environ['HOME'], '.pm', 'pm.log')
+        log_path = os.path.join(os.environ['HOME'], 'pm.log')
         if config_file or os.environ.get('PM_CONFIG'):
             if os.environ.get('PM_CONFIG'):
                 config = cl.load_yaml_config(os.environ.get('PM_CONFIG'))
