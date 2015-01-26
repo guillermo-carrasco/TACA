@@ -1,2 +1,2 @@
-""" Project Management logging module
+""" PM logging module for external scripts
 """

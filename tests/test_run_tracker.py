@@ -89,12 +89,3 @@ class TestTracker(unittest.TestCase):
         self.assertFalse(is_transferred(os.path.basename(self.to_start), self.transfer_file))
         self.assertFalse(is_transferred(os.path.basename(self.in_progress), self.transfer_file))
 
-    def test_4_get_base_mask(self):
-        """ Base mask should be correctly generated from the run SampleSheet
-        """
-        config = {'samplesheets_dir': os.path.join(os.path.abspath(os.curdir),'data')}
-        # Completed test run does not have a samplesheet
-        self.assertEqual(get_base_mask_from_samplesheet(os.path.abspath(self.completed), config), [])
-        # Only to_start run has samplesheet
-        bm = ['Y151', 'I8', 'Y151']
-        self.assertEqual(get_base_mask_from_samplesheet(os.path.abspath(self.to_start), config), bm)

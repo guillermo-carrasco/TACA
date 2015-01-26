@@ -3,6 +3,6 @@ pm.egg-info
 dist
 build
 _build
-*log
+*.log
 .DS*
 

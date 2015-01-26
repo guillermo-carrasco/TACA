@@ -3,6 +3,8 @@
 import contextlib
 import os
 
+RUN_RE = '\d{6}_[a-zA-Z\d\-]+_\d{4}_[AB0][A-Z\d]'
+
 @contextlib.contextmanager
 def chdir(new_dir):
     """Context manager to temporarily change to a new directory.

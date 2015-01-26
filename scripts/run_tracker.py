@@ -13,7 +13,7 @@ from datetime import datetime
 from pm.log import loggers
 from pm.utils.filesystem import chdir
 from pm.utils import config as cf
-from pm.utils import parsers
+from pm.utils import parsers, misc
 
 DESCRIPTION =(" Script to keep track and pre-process Illumina X Ten runs. "
 
@@ -120,22 +120,17 @@ def transfer_run(run, config, analysis=True):
         remote = "{}@{}:{}".format(r_user, r_host, r_dir)
         cl.extend([run, remote])
 
-        with open('rsync.out', 'w') as rsync_out, open('rsync.err', 'w') as rsync_err:
-            try:
-                # Create temp file indicating that the run is being transferred
-                open('transferring', 'w').close()
-                started = ("Started transfer of run {} on {}".format(os.path.basename(run), datetime.now()))
-                LOG.info(started)
-                rsync_out.write(started + '\n')
-                rsync_out.write('Command: {}\n'.format(' '.join(cl)))
-                rsync_out.write(''.join(['=']*len(cl)) + '\n')
-                subprocess.check_call(cl, stdout=rsync_out, stderr=rsync_err)
-            except subprocess.CalledProcessError, e:
-                error_msg = ("Transfer for run {} FAILED (exit code {}), "
-                             "please check log files rsync.out and rsync.err".format(
-                                                        os.path.basename(run), str(e.returncode)))
-                os.remove('transferring')
-                raise e
+        # Create temp file indicating that the run is being transferred
+        open('transferring', 'w').close()
+        started = ("Started transfer of run {} on {}".format(os.path.basename(run), datetime.now()))
+        LOG.info(started)
+        # In this particular case we want to capture the exception because we want
+        # to delete the transfer file
+        try:
+            misc.call_external_command(cl, with_log_files=True)
+        except subprocess.CalledProcessError as e:
+            os.remove('transferring')
+            raise e
 
         t_file = os.path.join(config['status_dir'], 'transfer.tsv')
         LOG.info('Adding run {} to {}'.format(os.path.basename(run), t_file))
@@ -176,65 +171,6 @@ def trigger_analysis(run, config):
         except requests.exceptions.ConnectionError:
             LOG.warn(("Something went wrong when triggering the analysis of {}. Please "
                       "check the logfile and make sure to start the analysis!".format(os.path.basename(run))))
-
-
-
-
-def get_base_mask_from_samplesheet(run, config):
-    """Get the base mask to use with bcl2fastq based on the run configuration
-    on the file RunInfo.xml
-
-    NOTE: No weird indexes configurations contemplated in this implementation. I.e
-    the method will not work with different index lengths in different lanes, will
-    always pick up the index of lane 1
-
-    :param str run: Path to the run directory
-    :returns: The corresponding base mask or empty string if no Samplesheet found
-    :rtype: str
-    """
-    runsetup = parsers.get_read_configuration(run)
-    bm = []
-
-    # Get index size from SampleSheet. Samplesheets are located in a shared partition
-    # so first we have to retrieve it. It has the name of the flowcell, but bcl2fastq
-    # needs to find it as SampleSheet.csv, so we just copy it with that name
-    with chdir(run):
-        fc_name = run.split('_')[-1][1:] # Run format: YYMMDD_INSTRUMENT-ID_EXPERIMENT-NUMBER_FCPOSITION-FCID
-        try:
-            shutil.copy(os.path.join(config.get('samplesheets_dir'), str(datetime.now().year), fc_name + '.csv'), 'SampleSheet.csv')
-        except IOError:
-            LOG.warn('No SampleSheet found for run {}, demultiplexing without SampleSheet'.format(os.path.basename(run)))
-        else:
-            ss = csv.DictReader(open('SampleSheet.csv', 'rb'), delimiter=',')
-            samplesheet = []
-            [samplesheet.append(read) for read in ss]
-
-            index_size = len(samplesheet[0]['Index'].replace('-', '').replace('NoIndex', ''))
-            per_index_size = index_size / (int(parsers.last_index_read(run)) - 1)
-
-            for read in runsetup:
-                cycles = read['NumCycles']
-                if read['IsIndexedRead'] == 'N':
-                    bm.append('Y' + cycles)
-                else:
-                    # I_iN_y(,I_iN_y) or I(,I)
-                    if index_size > int(cycles):
-                        i_remainder = int(cycles) - per_index_size
-                        if i_remainder > 0:
-                            bm.append('I' + str(per_index_size) + 'N' + str(i_remainder))
-                        else:
-                            bm.append('I' + cycles)
-                    # I_iN_y(,N) or I(,N)
-                    else:
-                        if index_size > 0:
-                            to_mask = "I" + str(index_size)
-                            if index_size < int(cycles):
-                               to_mask = to_mask + 'N' + str(int(cycles) - index_size)
-                            bm.append(to_mask)
-                            index_size = 0
-                        else:
-                            bm.append('N' + cycles)
-    return bm
 
 
 def run_bcl2fastq(run, config):
@@ -308,34 +244,18 @@ def run_bcl2fastq(run, config):
         if cl_options.get('tiles'):
             cl.extend(['--tiles', cl_options.get('tiles')])
 
-        # Base mask deduced from the samplesheet if not specified in the config file
         if cl_options.get('use-bases-mask'):
             cl.extend(['--use-bases-mask', cl_options.get('use-bases-mask')])
-        else:
-            bm = get_base_mask_from_samplesheet(run, config)
-            if bm:
-                cl.extend(['--use-bases-mask', ','.join(bm)])
 
         if cl_options.get('with-failed-reads'):
             cl.append('--with-failed-reads')
         if cl_options.get('write-fastq-reverse-complement'):
             cl.append('--write-fastq-reverse-complement')
 
-        # Execute bcl conversion and demultiplexing
-        with open('bcl2fastq.out', 'w') as bcl_out, open('bcl2fastq.err', 'w') as bcl_err:
-            try:
-                started = ("BCL to FASTQ conversion and demultiplexing started for "
-                           " run {} on {}".format(os.path.basename(run), datetime.now()))
-                LOG.info(started)
-                bcl_out.write(started + '\n')
-                bcl_out.write('Command: {}\n'.format(' '.join(cl)))
-                bcl_out.write(''.join(['=']*len(cl)) + '\n')
-                subprocess.check_call(cl, stdout=bcl_out, stderr=bcl_err)
-            except subprocess.CalledProcessError, e:
-                error_msg = ("BCL to Fastq conversion for {} FAILED (exit code {}), "
-                             "please check log files bcl2fastq.out and bcl2fastq.err".format(
-                                                        os.path.basename(run), str(e.returncode)))
-                raise e
+        LOG.info(("BCL to FASTQ conversion and demultiplexing started for "
+                  " run {} on {}".format(os.path.basename(run), datetime.now())))
+        
+        misc.call_external_command(cl, with_log_files=True)
 
         LOG.info(("BCL to FASTQ conversion and demultiplexing finished for "
                   "run {} on {}".format(os.path.basename(run), datetime.now())))
@@ -345,10 +265,16 @@ def run_bcl2fastq(run, config):
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description=DESCRIPTION)
-    parser.add_argument('--config', type=str, required=True, help='Config file for the NGI pipeline')
+    parser.add_argument('--config', type=str, help='Config file for the NGI pipeline')
     args = parser.parse_args()
 
-    config = cf.load_yaml_config(args.config)
+    if not args.config:
+        args.config = os.path.join(os.environ.get('HOME'), '.pm', 'pm.yaml')
+    try:
+        config = cf.load_yaml_config(args.config)
+    except IOError as e:
+        e.message = "No configuration file found in ~/.pm/pm.yaml or specified as parameter"
+        raise e
     check_config_options(config)
     config = config['preprocessing']
 

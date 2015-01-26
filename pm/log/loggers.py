@@ -4,18 +4,14 @@ import logging
 import os
 import sys
 
-from ConfigParser import NoOptionError, NoSectionError
-
 from pm.utils import config as cl
 
 
 def minimal_logger(namespace, config_file=None, to_file=True, debug=False):
     """Make and return a minimal console logger. Optionally write to a file as well.
-
     :param str namespace: Namespace of logger
     :param bool to_file: Log to a file (location in configuration file)
     :param bool debug: Log in DEBUG level or not
-
     :return: A logging.Logger object
     :rtype: logging.Logger
     """
@@ -33,19 +29,17 @@ def minimal_logger(namespace, config_file=None, to_file=True, debug=False):
     # File logger
     if to_file:
         cwd = os.path.dirname(os.path.realpath('.'))
-        log_path = os.path.join(os.environ['HOME'], '.pm', 'pm.log')
+        log_path = os.path.join(os.environ['HOME'], 'pm.log')
         if config_file or os.environ.get('PM_CONFIG'):
             if os.environ.get('PM_CONFIG'):
-                config = cl.load_config(os.environ.get('PM_CONFIG'))
+                config = cl.load_yaml_config(os.environ.get('PM_CONFIG'))
             else:
-                config = cl.load_config(config_file)
-            try:
-                log_path = config.get('log', 'log_dir')
-            except (NoOptionError, NoSectionError) as e:
-                raise e("Section [log] or option 'log_dir' were not found in the configuration file.")
-            else:
-                fh = logging.FileHandler(log_path)
-                fh.setLevel(log_level)
-                fh.setFormatter(formatter)
-                log.addHandler(fh)
+                config = cl.load_yaml_config(config_file)
+            log_path = config.get('log', {}).get('log_dir')
+            if not log_path:
+                raise RuntimeError("Section [log] or option 'log_dir' were not found in the configuration file.")
+        fh = logging.FileHandler(log_path)
+        fh.setLevel(log_level)
+        fh.setFormatter(formatter)
+        log.addHandler(fh)
     return log
