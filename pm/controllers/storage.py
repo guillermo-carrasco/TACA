@@ -3,6 +3,7 @@
 import os
 import re
 import shutil
+import time
 
 from cement.core import controller
 
@@ -33,9 +34,14 @@ class StorageController(BaseController):
         for data_dir in self.app.config.get('storage', 'data_dirs'):
             with filesystem.chdir(data_dir):
                 for run in [r for r in os.listdir(data_dir) if re.match(filesystem.RUN_RE, r)]:
-                    if os.path.exists(os.path.join(run, 'RTAComplete.txt')):
-                        self.app.log.info('Moving run {} to nosync directory'.format(os.path.basename(run)))
-                        shutil.move(run, 'nosync')
+                    rta_file = os.path.join(run, 'RTAComplete.txt')
+                    if os.path.exists(rta_file):
+                        # 1 day == 60*60*24 seconds --> 86400
+                        if os.stat(rta_file).st_mtime < time.time() - 86400:
+                            self.app.log.info('Moving run {} to nosync directory'.format(os.path.basename(run)))
+                            shutil.move(run, 'nosync')
+                        else:
+                            self.app.log('RTAComplete.txt file exists but is not older than 1 day, skipping run {}'.format(run))
 
 
     @controller.expose(help="Archive old runs to SWESTORE")
