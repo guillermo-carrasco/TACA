@@ -408,7 +408,8 @@ def run_bcl2fastq(run, config):
         LOG.info(("BCL to FASTQ conversion and demultiplexing started for "
                   " run {} on {}".format(os.path.basename(run), datetime.now())))
         
-        misc.call_external_command(cl, with_log_files=True)
+        #misc.call_external_command(cl, with_log_files=True)
+        misc.call_external_command_detached(cl, with_log_files=True)
 
         LOG.info(("BCL to FASTQ conversion and demultiplexing finished for "
                   "run {} on {}".format(os.path.basename(run), datetime.now())))
