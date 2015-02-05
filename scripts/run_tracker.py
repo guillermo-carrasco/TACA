@@ -80,8 +80,9 @@ def processing_status(run):
 
 
 def is_transferred(run, transfer_file):
-    """ Checks wether a run has been transferred to the analysis server or not
-
+    """ Checks wether a run has been transferred to the analysis server or not.
+        Returns true in the case in which the tranfer is ongoing.
+        
     :param str run: Run directory
     :param str transfer_file: Path to file with information about transferred runs
     """
