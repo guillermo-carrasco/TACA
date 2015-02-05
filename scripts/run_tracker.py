@@ -414,7 +414,7 @@ def run_bcl2fastq(run, config):
         misc.call_external_command_detached(cl, with_log_files=True)
 
         #LOG.info(("BCL to FASTQ conversion and demultiplexing finished for "
-                  "run {} on {}".format(os.path.basename(run), datetime.now())))
+        #          "run {} on {}".format(os.path.basename(run), datetime.now())))
         # Transfer the processed data to the analysis server
         #transfer_run(run, config)
 
