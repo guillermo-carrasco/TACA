@@ -195,7 +195,7 @@ def prepare_sample_sheet(run, config):
     samplesheets_dir  = os.path.join(samplesheets_dirs, current_year)
 
     run_name_componets = run_name.split("_")
-    FCID = run_name_componets[3]
+    FCID = run_name_componets[3][1:]
     
     FCID_samplesheet_origin = os.path.join(samplesheets_dir, FCID + '.csv')
     FCID_samplesheet_dest   = os.path.join(run, "SampleSheet.csv")
