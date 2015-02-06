@@ -82,7 +82,7 @@ def processing_status(run):
 def is_transferred(run, transfer_file):
     """ Checks wether a run has been transferred to the analysis server or not.
         Returns true in the case in which the tranfer is ongoing.
-        
+
     :param str run: Run directory
     :param str transfer_file: Path to file with information about transferred runs
     """
@@ -361,16 +361,16 @@ def run_bcl2fastq(run, config):
         # Processing cl_options
         threads = cl_options.get('loading-threads')
         if threads and type(threads) is int:
-            cl.extend(['--loading-threads', threads])
+            cl.extend(['--loading-threads', '{}'.format(threads)])
         threads = cl_options.get('demultiplexing-threads')
         if threads and type(threads) is int:
-            cl.extend(['--demultiplexing-threads', threads])
+            cl.extend(['--demultiplexing-threads', '{}'.format(threads)])
         threads = cl_options.get('processing-threads')
         if threads and type(threads) is int:
-            cl.extend(['--processing-threads', threads])
+            cl.extend(['--processing-threads', '{}'.format(threads)])
         threads = cl_options.get('writing-threads')
         if threads and type(threads) is int:
-            cl.extend(['--writing-threads', threads])
+            cl.extend(['--writing-threads', '{}'.format(threads)])
 
         # Behavioral options
         adapter_stringency = cl_options.get('adapter-stringency')
