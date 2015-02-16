@@ -203,7 +203,7 @@ def prepare_sample_sheet(run, config):
 
     #check that the samplesheet is not already present
     if os.path.exists(FCID_samplesheet_dest):
-        LOG.warn(("When trying to generate SampleSheet.csv for sample sheet {} I dinf out that "
+        LOG.warn(("When trying to generate SampleSheet.csv for sample sheet {}  looks like that "
                  "SampleSheet.csv was already present in {} !!".format(FCID, FCID_samplesheet_dest)))
         return False
 
@@ -288,18 +288,18 @@ def sampleSheetToDict(samplesheet):
     """ takes as input a samplesheet (Xten compatible) and stores all field in an hash table.
         Samplesheet should look something like:
             [Section1]
-            section1,raw,1
-            section2,raw,2
+            section1,row,1
+            section1,row,2
             [Section2]
-            section2,raw,1
-            section2,raw,2
+            section2,row,1
+            section2,row,2
             ...
         the hash structure will look like
-            "Section1" --> [["section1", "raw", "1"],
-                            ["section1", "raw" , "2"]
+            "Section1" --> [["section1", "row", "1"],
+                            ["section1", "row" , "2"]
                            ]
-            "Section2" --> [["section2", "raw", "1"],
-                            ["section2", "raw" , "2"]
+            "Section2" --> [["section2", "row", "1"],
+                            ["section2", "row" , "2"]
                            ]
     
         :param str samplesheet: the sample sheet to be stored in the hash table
