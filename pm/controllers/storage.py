@@ -31,7 +31,7 @@ class StorageController(BaseController):
 
     @controller.expose(help="Move old runs to nosync directory so they're not synced to the processing server")
     def cleanup(self):
-        for data_dir in self.app.config.get('storage', 'data_dirs').split(','):
+        for data_dir in self.app.config.get('storage', 'data_dirs'):
             with filesystem.chdir(data_dir):
                 for run in [r for r in os.listdir(data_dir) if re.match(filesystem.RUN_RE, r)]:
                     rta_file = os.path.join(run, 'RTAComplete.txt')
