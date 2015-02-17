@@ -41,7 +41,7 @@ class StorageController(BaseController):
                             self.app.log.info('Moving run {} to nosync directory'.format(os.path.basename(run)))
                             shutil.move(run, 'nosync')
                         else:
-                            self.app.log('RTAComplete.txt file exists but is not older than 1 day, skipping run {}'.format(run))
+                            self.app.log.info('RTAComplete.txt file exists but is not older than 1 day, skipping run {}'.format(run))
 
 
     @controller.expose(help="Archive old runs to SWESTORE")
