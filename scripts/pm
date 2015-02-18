@@ -6,10 +6,12 @@ import os
 
 from cement.core import foundation, handler
 from cement.ext.ext_yaml import YamlConfigHandler
+from cement.utils.misc import init_defaults
 from pm.controllers import BaseController
 from pm.controllers import storage
 
 CONFIG_FLIE = os.path.join(os.getenv('HOME'), '.pm', 'pm.yaml')
+LOG_FILE = os.path.join(os.getenv('HOME'), '.pm', 'pm.log')
 
 class PmApp(foundation.CementApp):
     class Meta:
@@ -18,7 +20,9 @@ class PmApp(foundation.CementApp):
         config_handler = YamlConfigHandler
 
 # Create the main application
-app = PmApp()
+defaults = init_defaults('PM', 'log.logging')
+defaults['log.logging']['file'] = LOG_FILE
+app = PmApp(config_defaults=defaults)
 
 try:
     # Register handlers
