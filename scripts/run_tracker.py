@@ -251,13 +251,12 @@ def sampleSheetMassage(samplesheet_dict):
         if data: #if not empty
             new_data = data[0:6] + data[7:8] # remove index2 fuck Genologics
             if data[0] != "Lane": #this is the header section
-                tmp = new_data[1]
-                new_data[1] = new_data[2] # make SampleID equal to SampleName
-                new_data[2] = tmp     # in this way the dir structure will be project/sample_name/*fastq
+                new_data[1] = "Sample_" + new_data[2] # make SampleID equal to Sample_SampleName
         FCID_samplesheet_dest_dict["Data"].append(new_data) # keep also white lines
-
     #I do not care if there are other [.*] sections
     return FCID_samplesheet_dest_dict
+
+
 
 
 
