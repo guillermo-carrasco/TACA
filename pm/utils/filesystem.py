@@ -3,6 +3,8 @@
 import contextlib
 import os
 
+from subprocess import check_call, CalledProcessError
+
 RUN_RE = '\d{6}_[a-zA-Z\d\-]+_\d{4}_[AB0][A-Z\d]'
 
 @contextlib.contextmanager
@@ -17,3 +19,19 @@ def chdir(new_dir):
         yield
     finally:
         os.chdir(cur_dir)
+
+
+def is_in_swestore(f):
+    """ Checks if a file exists in Swestore
+
+    :param f str: File to check
+    :returns bool: True if the file is already in Swestore, False otherwise
+    """
+    with open(os.devnull, 'w') as null:
+        try:
+            check_call(['ils', f], stdout=null, stderr=null)
+        except CalledProcessError:
+            # ils will fail if the file does not exist in
+            return False
+        else:
+            return True

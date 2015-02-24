@@ -82,10 +82,13 @@ class StorageController(BaseController):
             :param str dest: Destination directory in Swestore
             :param bool remove: If True, remove original file from source
             """
-            self.app.log.info("Sending {} to swestore".format(f))
-            misc.call_external_command('iput -K -P {file} {dest}'.format(file=f, dest=dest),
-                    with_log_files=True)
-            self.app.log.info('Run {} sent correctly and checksum was okay.'.format(f))
+            if not filesystem.is_in_swestore(f):
+                self.app.log.info("Sending {} to swestore".format(f))
+                misc.call_external_command('iput -K -P {file} {dest}'.format(file=f, dest=dest),
+                        with_log_files=True)
+                self.app.log.info('Run {} sent correctly and checksum was okay.'.format(f))
+            else:
+                self.app.log.warn('Run {} is already in Swestore, not sending it again'.format(f))
             if remove:
                 self.app.log.info('Removing run'.format(f))
                 os.remove(f)
