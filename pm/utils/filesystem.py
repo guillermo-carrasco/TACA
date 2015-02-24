@@ -31,7 +31,7 @@ def is_in_swestore(f):
         try:
             check_call(['ils', f], stdout=null, stderr=null)
         except CalledProcessError:
-            # ils will fail if the file does not exist in
+            # ils will fail if the file does not exist in swestore
             return False
         else:
             return True
