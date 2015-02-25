@@ -1,4 +1,4 @@
-""" PM controllers
+""" TACA controllers
 """
 import os
 import re
@@ -7,8 +7,8 @@ import time
 
 from cement.core import controller
 
-from pm.controllers import BaseController
-from pm.utils import filesystem, misc
+from taca.controllers import BaseController
+from taca.utils import filesystem, misc
 
 class StorageController(BaseController):
     """ Storage Controller

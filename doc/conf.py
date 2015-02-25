@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# PM documentation build configuration file, created by
+# TACA documentation build configuration file, created by
 # sphinx-quickstart on Wed Sep 17 12:39:41 2014.
 #
 # This file is execfile()d with the current directory set to its
@@ -49,7 +49,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'PM'
+project = u'TACA'
 copyright = u'2014, Guillermo Carrasco'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -187,7 +187,7 @@ html_show_copyright = False
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'PMdoc'
+htmlhelp_basename = 'TACAdoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -207,7 +207,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index', 'PM.tex', u'PM Documentation',
+  ('index', 'TACA.tex', u'TACA Documentation',
    u'Guillermo Carrasco', 'manual'),
 ]
 
@@ -237,7 +237,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'pm', u'PM Documentation',
+    ('index', 'taca', u'TACA Documentation',
      [u'Guillermo Carrasco'], 1)
 ]
 
@@ -251,8 +251,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'PM', u'PM Documentation',
-   u'Guillermo Carrasco', 'PM', 'One line description of project.',
+  ('index', 'TACA', u'TACA Documentation',
+   u'Guillermo Carrasco', 'TACA', 'One line description of project.',
    'Miscellaneous'),
 ]
 
@@ -272,13 +272,13 @@ texinfo_documents = [
 # -- Options for Epub output ----------------------------------------------
 
 # Bibliographic Dublin Core info.
-epub_title = u'PM'
+epub_title = u'TACA'
 epub_author = u'Guillermo Carrasco'
 epub_publisher = u'Guillermo Carrasco'
 epub_copyright = u'2014, Guillermo Carrasco'
 
 # The basename for the epub file. It defaults to the project name.
-#epub_basename = u'PM'
+#epub_basename = u'TACA'
 
 # The HTML theme for the epub output. Since the default themes are not optimized
 # for small screen space, using the same theme for HTML and epub output is

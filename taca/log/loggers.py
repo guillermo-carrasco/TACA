@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 
-from pm.utils import config as cl
+from taca.utils import config as cl
 
 
 def minimal_logger(namespace, config_file=None, to_file=True, debug=False):
@@ -29,10 +29,10 @@ def minimal_logger(namespace, config_file=None, to_file=True, debug=False):
     # File logger
     if to_file:
         cwd = os.path.dirname(os.path.realpath('.'))
-        log_path = os.path.join(os.environ['HOME'], 'pm.log')
-        if config_file or os.environ.get('PM_CONFIG'):
-            if os.environ.get('PM_CONFIG'):
-                config = cl.load_yaml_config(os.environ.get('PM_CONFIG'))
+        log_path = os.path.join(os.environ['HOME'], 'taca.log')
+        if config_file or os.environ.get('TACA_CONFIG'):
+            if os.environ.get('TACA_CONFIG'):
+                config = cl.load_yaml_config(os.environ.get('TACA_CONFIG'))
             else:
                 config = cl.load_yaml_config(config_file)
             log_path = config.get('log', {}).get('log_dir')
