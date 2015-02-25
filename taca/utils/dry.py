@@ -23,13 +23,13 @@ import os
 import shutil
 from cement.utils import shell
 
-from pm.log import loggers
+from taca.log import loggers
 
 LOG = loggers.minimal_logger(__name__)
 
 def dry(message, func, dry_run=True, *args, **kw):
     """Wrapper that runs a function (runpipe) if flag dry_run isn't set, otherwise returns function call as string
-    
+
     :param str message: message describing function call
     :param func: function to call
     :param *args: positional arguments to pass to function
@@ -39,4 +39,3 @@ def dry(message, func, dry_run=True, *args, **kw):
         LOG.debug("(DRY_RUN): " + str(message) + "\n")
         return "(DRY_RUN): " + str(message) + "\n"
     return func(*args, **kw)
-
