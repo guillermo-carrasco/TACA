@@ -9,9 +9,9 @@ try:
 except IOError:
     install_requires = []
 
-setup(name='pm',
+setup(name='taca',
       version=version,
-      description="Project and Data management for NGI Sweden",
+      description="Tool for the Automation of Cleanup and Analyses",
       long_description='This package contains a set of functionalities that are '
                        'useful in the day-to-day tasks of bioinformatitians in '
                        'National Genomics Infrastructure in Stockholm, Sweden.',
@@ -23,6 +23,6 @@ setup(name='pm',
       packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
       include_package_data=True,
       zip_safe=False,
-      scripts=['scripts/pm', 'scripts/run_tracker.py'],
+      scripts=['scripts/taca', 'scripts/run_tracker.py'],
       install_requires=install_requires
       )
