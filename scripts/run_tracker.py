@@ -11,10 +11,10 @@ import requests
 from datetime import datetime
 import re
 
-from pm.log import loggers
-from pm.utils.filesystem import chdir
-from pm.utils import config as cf
-from pm.utils import parsers, misc
+from taca.log import loggers
+from taca.utils.filesystem import chdir
+from taca.utils import config as cf
+from taca.utils import parsers, misc
 
 # test flowcells: 141229_ST-E00214_0019_AH00XXXXXX/ fake X-flowcell  copy of 141229_ST-E00214_0019_AH00V3CCXX
 # sample sheet is here /srv/mfs/samplesheets/2015/AH00XXXXXX.csv
@@ -426,11 +426,11 @@ if __name__=="__main__":
     args = parser.parse_args()
 
     if not args.config:
-        args.config = os.path.join(os.environ.get('HOME'), '.pm', 'pm.yaml')
+        args.config = os.path.join(os.environ.get('HOME'), '.taca', 'taca.yaml')
     try:
         config = cf.load_yaml_config(args.config)
     except IOError as e:
-        e.message = "No configuration file found in ~/.pm/pm.yaml or specified as parameter"
+        e.message = "No configuration file found in ~/.taca/taca.yaml or specified as parameter"
         raise e
     check_config_options(config)
     config = config['preprocessing']
