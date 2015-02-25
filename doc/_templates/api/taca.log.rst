@@ -1,13 +1,13 @@
-pm.core package
-===============
+taca.log package
+================
 
 Submodules
 ----------
 
-pm.core.controllers module
---------------------------
+taca.log.loggers module
+-----------------------
 
-.. automodule:: pm.core.controllers
+.. automodule:: taca.log.loggers
     :members:
     :undoc-members:
     :show-inheritance:
@@ -16,7 +16,7 @@ pm.core.controllers module
 Module contents
 ---------------
 
-.. automodule:: pm.core
+.. automodule:: taca.log
     :members:
     :undoc-members:
     :show-inheritance:
