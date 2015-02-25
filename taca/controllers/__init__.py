@@ -17,7 +17,7 @@ class BaseController(controller.CementBaseController):
 
     @controller.expose(hide=True)
     def default(self):
-        print "Execute pm --help to display available commands"
+        print "Execute taca --help to display available commands"
 
     @controller.expose(hide=True, help="Prints a hello message")
     def hello(self):

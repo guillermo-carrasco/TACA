@@ -1,28 +1,28 @@
 #!/usr/bin/env python
 
-""" This is the entry point for PM.
+""" This is the entry point for TACA.
 """
 import os
 
 from cement.core import foundation, handler
 from cement.ext.ext_yaml import YamlConfigHandler
 from cement.utils.misc import init_defaults
-from pm.controllers import BaseController
-from pm.controllers import storage
+from taca.controllers import BaseController
+from taca.controllers import storage
 
-CONFIG_FLIE = os.path.join(os.getenv('HOME'), '.pm', 'pm.yaml')
-LOG_FILE = os.path.join(os.getenv('HOME'), '.pm', 'pm.log')
+CONFIG_FLIE = os.path.join(os.getenv('HOME'), '.taca', 'taca.yaml')
+LOG_FILE = os.path.join(os.getenv('HOME'), '.taca', 'taca.log')
 
-class PmApp(foundation.CementApp):
+class TACAApp(foundation.CementApp):
     class Meta:
-        label = 'PM'
+        label = 'TACA'
         base_controller = BaseController
         config_handler = YamlConfigHandler
 
 # Create the main application
-defaults = init_defaults('PM', 'log.logging')
+defaults = init_defaults('TACA', 'log.logging')
 defaults['log.logging']['file'] = LOG_FILE
-app = PmApp(config_defaults=defaults)
+app = TACAApp(config_defaults=defaults)
 
 try:
     # Register handlers
