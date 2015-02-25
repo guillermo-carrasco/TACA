@@ -1,2 +1,2 @@
-""" PM logging module for external scripts
+""" TACA logging module for external scripts
 """
