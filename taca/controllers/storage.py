@@ -48,12 +48,20 @@ class StorageController(BaseController):
     def archive_to_swestore(self):
         # If the run is specified in the command line, check that exists and archive
         if self.app.pargs.run:
-            if re.match(filesystem.RUN_RE, os.path.basename(self.app.pargs.run)):
-                if not os.path.exists(self.app.pargs.run):
+            run = os.path.basename(self.app.pargs.run)
+            base_dir = os.path.dirname(self.app.pargs.run)
+            if re.match(filesystem.RUN_RE, run):
+                # If the parameter is not an absolute path, find the in the archive_dirs
+                if not base_dir:
+                    for archive_dir in self.app.config.get('storage', 'archive_dirs'):
+                        if os.path.exists(os.path.join(archive_dir, run)):
+                            base_dir = archive_dir
+                if not os.path.exists(os.path.join(base_dir, run)):
                     self.app.log.error(("Run {} not found. Please make sure to specify "
-                        "the absolute path or relative path being in the correct directory.".format(self.app.pargs.run)))
+                        "the absolute path or relative path being in the correct directory.".format(run)))
                 else:
-                    self._archive_run(self.pargs.run)
+                    with filesystem.chdir(base_dir):
+                        self._archive_run(run)
             else:
                 self.app.log.error("The name {} doesn't look like an Illumina run".format(os.path.basename(run)))
         # Otherwise find all runs in every data dir on the nosync partition
