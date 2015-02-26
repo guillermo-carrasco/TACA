@@ -19,8 +19,9 @@ def call_external_command(cl, with_log_files=False):
     stderr = sys.stderr
 
     if with_log_files:
-        stdout = open(command + '.out', 'wa')
-        stderr = open(command + '.err', 'wa')
+        time = datetime.now()
+        stdout = open(command + '_{}{}{}.out'.format(time.hour, time.minute, time.second), 'wa')
+        stderr = open(command + '_{}{}{}.err'.format(time.hour, time.minute, time.second), 'wa')
         started = "Started command {} on {}".format(' '.join(cl), datetime.now())
         stdout.write(started + '\n')
         stdout.write(''.join(['=']*len(cl)) + '\n')
@@ -39,7 +40,7 @@ def call_external_command(cl, with_log_files=False):
 
 def call_external_command_detached(cl, with_log_files=False):
     """ Executes an external command
-        
+
         :param string cl: Command line to be executed (command + options and parameters)
         :param bool with_log_files: Create log files for stdout and stderr
         """
@@ -50,12 +51,13 @@ def call_external_command_detached(cl, with_log_files=False):
     stderr = sys.stderr
 
     if with_log_files:
-        stdout = open(command + '.out', 'wa')
-        stderr = open(command + '.err', 'wa')
+        time = datetime.now()
+        stdout = open(command + '_{}{}{}.out'.format(time.hour, time.minute, time.second), 'wa')
+        stderr = open(command + '_{}{}{}.err'.format(time.hour, time.minute, time.second), 'wa')
         started = "Started command {} on {}".format(' '.join(cl), datetime.now())
         stdout.write(started + '\n')
         stdout.write(''.join(['=']*len(cl)) + '\n')
-    
+
     try:
         p_handle = subprocess.Popen(cl, stdout=stdout, stderr=stderr)
     except subprocess.CalledProcessError, e:
@@ -66,5 +68,3 @@ def call_external_command_detached(cl, with_log_files=False):
             stdout.close()
             stderr.close()
     return p_handle
-
-
