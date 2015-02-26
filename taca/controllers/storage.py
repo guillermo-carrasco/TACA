@@ -51,7 +51,7 @@ class StorageController(BaseController):
             run = os.path.basename(self.app.pargs.run)
             base_dir = os.path.dirname(self.app.pargs.run)
             if re.match(filesystem.RUN_RE, run):
-                # If the parameter is not an absolute path, find the in the archive_dirs
+                # If the parameter is not an absolute path, find the run in the archive_dirs
                 if not base_dir:
                     for archive_dir in self.app.config.get('storage', 'archive_dirs'):
                         if os.path.exists(os.path.join(archive_dir, run)):
