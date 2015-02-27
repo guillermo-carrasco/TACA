@@ -1,13 +1,13 @@
 from setuptools import setup, find_packages
 import sys, os
 
-version = '1.0'
-
 try:
     with open("requirements.txt", "r") as f:
         install_requires = [x.strip() for x in f.readlines()]
 except IOError:
     install_requires = []
+
+version = '0.4'
 
 setup(name='taca',
       version=version,
@@ -17,8 +17,8 @@ setup(name='taca',
                        'National Genomics Infrastructure in Stockholm, Sweden.',
       keywords='bioinformatics',
       author='Guillermo Carrasco',
-      author_email='guillermo.carrasco@scilifelab.se',
-      url='https://portal.scilifelab.se/genomics/',
+      author_email='guille.ch.88@gmail.com',
+      url='http://taca.readthedocs.org/en/latest/',
       license='MIT',
       packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
       include_package_data=True,
