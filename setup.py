@@ -7,7 +7,7 @@ try:
 except IOError:
     install_requires = []
 
-version = '0.1'
+version = '0.1.1'
 
 setup(name='taca',
       version=version,
