@@ -249,7 +249,7 @@ def sampleSheetMassage(samplesheet_dict, samplesheet_name=''):
     FCID_samplesheet_dest_dict["Data"] = []
     for data in samplesheet_dict["Data"]:
         if data: #if not empty
-            new_data = data[0:6] + data[7:8] # remove index2 fuck Genologics
+            new_data = data[0:6] + data[7:8] # remove index2
             if data[0] != "Lane": #this is the header section
                 new_data[1] = "Sample_" + new_data[2] # make SampleID equal to Sample_SampleName
         FCID_samplesheet_dest_dict["Data"].append(new_data) # keep also white lines
