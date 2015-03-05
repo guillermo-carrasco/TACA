@@ -28,4 +28,4 @@ def archive_to_swestore(ctx):
 def cleanup(ctx):
 	""" Move old runs to nosync directory so they're not synced to the processing server """
 	params = ctx.parent.params
-	st.cleanup(ctx.obj['config'], ctx.obj['logger'], days=params.get('days'), run=params.get('run'))
+	st.cleanup(ctx.obj['config'], days=params.get('days'), run=params.get('run'))

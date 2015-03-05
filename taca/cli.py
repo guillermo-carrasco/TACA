@@ -1,11 +1,11 @@
 import os
 
 import click
+import taca.log
 
 from pkg_resources import iter_entry_points
 
 from taca.utils import config
-from taca.log import loggers
 
 
 @click.group()
@@ -20,7 +20,11 @@ def cli(ctx, config_file):
 	""" Tool for the Automation of Storage and Analyses """
 	ctx.obj = {}
 	ctx.obj['config'] = config.load_yaml_config(config_file)
-	ctx.obj['logger'] = loggers.minimal_logger('TACA', ctx.obj['config'])
+	log_file = ctx.obj['config'].get('log', {}).get('log_file', None)
+	if log_file:
+		level = ctx.obj['config'].get('log').get('log_level', 'INFO')
+		taca.log.init_logger_file(log_file, level)
+
 
 #Add subcommands dynamically to the CLI
 for entry_point in iter_entry_points('taca.subcommands'):
