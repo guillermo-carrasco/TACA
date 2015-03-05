@@ -1,29 +1,31 @@
 """ CLI for the storage subcommand
 """
 import click
-
+from taca.storage import storage as st
 
 
 @click.group()
-@click.option('-d', '--days', type=int, default=10,
+@click.option('-d', '--days', type=int, default=2,
 		      help="Days to consider a run old")
+@click.option('-r', '--run', type=click.Path(exists=True))
 @click.pass_context
-def storage(ctx, days):
+def storage(ctx, days, run):
 	""" Storage management methods and utilities """
-	import ipdb; ipdb.set_trace()
-	print "Storage called!"
+	pass
 
 # Storage subcommands
 @storage.command()
-def archive_to_swestore():
-    """ Archive a run to swestore
+@click.pass_context
+def archive_to_swestore(ctx):
+    """ Archive old runs to SWESTORE
     """
 	# Here just call the actual archive-to-swestore method
-    print "Archiving run!"
+    raise NotImplementedError('Sorry...')
 
 
 @storage.command()
-def cleanup():
-	""" Clean old runs from the data directories. """
-	print "Cleaning runs!! "
-	#same here, call the actual cleaning function
+@click.pass_context
+def cleanup(ctx):
+	""" Move old runs to nosync directory so they're not synced to the processing server """
+	params = ctx.parent.params
+	st.cleanup(ctx.obj['config'], ctx.obj['logger'], days=params.get('days'), run=params.get('run'))
