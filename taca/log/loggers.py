@@ -15,7 +15,6 @@ def minimal_logger(namespace, config=None, to_file=True):
     :return: A logging.Logger object
     :rtype: logging.Logger
     """
-    log_level = logging.DEBUG if debug else logging.INFO
     log = logging.getLogger(namespace)
     log.setLevel(log_level)
 
