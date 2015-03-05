@@ -12,14 +12,6 @@ taca.utils.config module
     :undoc-members:
     :show-inheritance:
 
-taca.utils.dry module
----------------------
-
-.. automodule:: taca.utils.dry
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 taca.utils.filesystem module
 ----------------------------
 

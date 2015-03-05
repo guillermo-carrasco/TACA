@@ -6,9 +6,21 @@ Subpackages
 
 .. toctree::
 
-    taca.controllers
     taca.log
+    taca.storage
     taca.utils
+
+Submodules
+----------
+
+taca.cli module
+---------------
+
+.. automodule:: taca.cli
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 Module contents
 ---------------

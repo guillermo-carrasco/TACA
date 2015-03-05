@@ -1,18 +1,6 @@
 taca.log package
 ================
 
-Submodules
-----------
-
-taca.log.loggers module
------------------------
-
-.. automodule:: taca.log.loggers
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-
 Module contents
 ---------------
 
