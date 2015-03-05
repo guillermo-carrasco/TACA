@@ -21,7 +21,6 @@ def minimal_logger(namespace, config=None, to_file=True):
     s_h = logging.StreamHandler()
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     s_h.setFormatter(formatter)
-    s_h.setLevel(log_level)
     log.addHandler(s_h)
 
     # File logger
@@ -33,7 +32,6 @@ def minimal_logger(namespace, config=None, to_file=True):
             if not log_path:
                 raise RuntimeError("Section 'log' or option 'log_dir' were not found in the configuration file.")
         fh = logging.FileHandler(log_path)
-        fh.setLevel(log_level)
         fh.setFormatter(formatter)
         log.addHandler(fh)
     return log
