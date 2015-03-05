@@ -3,9 +3,16 @@
 
 import click
 
+import production
+
+
 @click.group()
 @click.option('-d', '--days', type=int, default=10,
 		      help="Days to consider a run old")
-def storage(context):
+@click.pass_context
+def storage(context, days):
 	""" Storage management methods and utilities """
-	pass
+	print context.params
+
+for subcommand in production:
+	storage.add_command(subcommand)

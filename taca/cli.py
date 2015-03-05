@@ -17,5 +17,5 @@ def cli(context, config, run):
 	""" Tool for the Automation of Storage and Analyses """
 
 #Add subcommands dynamically to the CLI
-for entry_point in iter_entry_points('taca_click.subcommands'):
+for entry_point in iter_entry_points('taca.subcommands'):
 	cli.add_command(entry_point.load())

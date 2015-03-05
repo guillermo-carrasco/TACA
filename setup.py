@@ -25,8 +25,8 @@ setup(name='taca',
     zip_safe=False,
 
     entry_points={
-        'console_scripts': ['taca_click = taca.cli:cli'],
-        'taca_click.subcommands': [
+        'console_scripts': ['taca = taca.cli:cli'],
+        'taca.subcommands': [
             'storage = taca.storage.cli:storage'
         ]
     },
