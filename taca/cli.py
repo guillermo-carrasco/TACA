@@ -18,6 +18,7 @@ from taca.utils import config
 @click.pass_context
 def cli(ctx, config_file):
 	""" Tool for the Automation of Storage and Analyses """
+
 	ctx.obj = {}
 	ctx.obj['config'] = config.load_yaml_config(config_file)
 	log_file = ctx.obj['config'].get('log', {}).get('log_file', None)

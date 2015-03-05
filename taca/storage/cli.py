@@ -15,12 +15,15 @@ def storage(ctx, days, run):
 
 # Storage subcommands
 @storage.command()
+@click.option('--backend', type=click.Choice(['swestore']), required=True,
+			  help='Long term storage backend')
 @click.pass_context
-def archive_to_swestore(ctx):
-    """ Archive old runs to SWESTORE
-    """
-	# Here just call the actual archive-to-swestore method
-    raise NotImplementedError('Sorry...')
+def archive(ctx, backend):
+	""" Archive old runs to SWESTORE
+	"""
+	params = ctx.parent.params
+	if backend == 'swestore':
+		st.archive_to_swestore(ctx.obj['config'], days=params.get('days'), run=params.get('run'))
 
 
 @storage.command()
@@ -28,4 +31,4 @@ def archive_to_swestore(ctx):
 def cleanup(ctx):
 	""" Move old runs to nosync directory so they're not synced to the processing server """
 	params = ctx.parent.params
-	st.cleanup(ctx.obj['config'], days=params.get('days'), run=params.get('run'))
+	st.cleanup(ctx.obj['config'], days=params.get('days'))
