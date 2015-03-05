@@ -16,7 +16,6 @@ def minimal_logger(namespace, config=None, to_file=True):
     :rtype: logging.Logger
     """
     log = logging.getLogger(namespace)
-    log.setLevel(log_level)
 
     # Console logger
     s_h = logging.StreamHandler()
