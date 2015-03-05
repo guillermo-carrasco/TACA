@@ -31,9 +31,12 @@ def load_yaml_config(config_file):
     :rtype: dict
     :raises IOError: If the config file cannot be opened.
     """
-    try:
-        with open(config_file, 'r') as f:
-            return yaml.load(f)
-    except IOError as e:
-        e.message = "Could not open configuration file \"{}\".".format(config_file)
-        raise e
+    if type(config_file) is file:
+        return yaml.load(config_file)
+    else:
+        try:
+            with open(config_file, 'r') as f:
+                return yaml.load(f)
+        except IOError as e:
+            e.message = "Could not open configuration file \"{}\".".format(config_file)
+            raise e
