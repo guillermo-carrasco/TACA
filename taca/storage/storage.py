@@ -77,7 +77,7 @@ def _archive_run(config, run):
             LOG.info('Run {} sent correctly and checksum was okay.'.format(f))
         else:
             LOG.warn('Run {} is already in Swestore or currently being archived, not sending it again'.format(f))
-        if remove and not misc.exists_process_with_text(run):
+        if remove and filesystem.is_in_swestore(run) and not misc.exists_process_with_text(run):
             LOG.info('Removing run'.format(f))
             os.remove(f)
 
