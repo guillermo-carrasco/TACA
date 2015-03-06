@@ -5,7 +5,7 @@ from taca.storage import storage as st
 
 
 @click.group()
-@click.option('-d', '--days', type=int, default=2,
+@click.option('-d', '--days', default=2,
 		      help="Days to consider a run old")
 @click.option('-r', '--run', type=click.Path(exists=True))
 @click.pass_context
