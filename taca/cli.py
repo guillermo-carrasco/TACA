@@ -5,10 +5,12 @@ import taca.log
 
 from pkg_resources import iter_entry_points
 
+from taca import __version__
 from taca.utils import config
 
 
 @click.group()
+@click.version_option(__version__)
 # Priority for the configuration file is: environment variable > -c option > default
 @click.option('-c', '--config-file',
 			  default=os.path.join(os.environ['HOME'], '.taca/taca.yaml'),

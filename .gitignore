@@ -1,4 +1,4 @@
-taca.egg-info
+*.egg-info
 *pyc
 dist
 build

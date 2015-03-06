@@ -1,16 +1,16 @@
 from setuptools import setup, find_packages
 import sys, os
 
+from taca import __version__
+
 try:
     with open("requirements.txt", "r") as f:
         install_requires = [x.strip() for x in f.readlines()]
 except IOError:
     install_requires = []
 
-version = '0.1.1'
-
 setup(name='taca',
-    version=version,
+    version=__version__,
     description="Tool for the Automation of Cleanup and Analyses",
     long_description='This package contains a set of functionalities that are '
                    'useful in the day-to-day tasks of bioinformatitians in '
