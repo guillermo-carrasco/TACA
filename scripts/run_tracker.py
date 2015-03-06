@@ -11,7 +11,7 @@ import requests
 from datetime import datetime
 import re
 
-from taca.log import loggers
+from taca.log import LOG
 from taca.utils.filesystem import chdir
 from taca.utils import config as cf
 from taca.utils import parsers, misc
@@ -29,8 +29,6 @@ DESCRIPTION =(" Script to keep track and pre-process Illumina X Ten runs. "
 
 "Once a run is completed and it has been pre-processed, demultiplexed data will be "
 "sent to the processing server/HPC indicated in the configuration file.")
-
-LOG = loggers.minimal_logger('Run tracker')
 
 def check_config_options(config):
     """ Check that all needed configuration sections/config are present
