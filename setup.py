@@ -1,5 +1,7 @@
 from setuptools import setup, find_packages
-import sys, os
+import glob
+import os
+import sys
 
 from taca import __version__
 
@@ -21,6 +23,7 @@ setup(name='taca',
     url='http://taca.readthedocs.org/en/latest/',
     license='MIT',
     packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
+    scripts=glob.glob('scripts/*.py'),
     include_package_data=True,
     zip_safe=False,
 
