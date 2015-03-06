@@ -71,7 +71,7 @@ def _archive_run(config, run):
         """
         if not filesystem.is_in_swestore(f):
             LOG.info("Sending {} to swestore".format(f))
-            misc.call_external_command_detached('iput -K -P {file} {dest}'.format(file=f, dest=dest),
+            misc.call_external_command('iput -K -P {file} {dest}'.format(file=f, dest=dest),
                     with_log_files=True)
             LOG.info('Run {} sent correctly and checksum was okay.'.format(f))
         else:
