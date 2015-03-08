@@ -50,16 +50,15 @@ def archive_to_swestore(days, run=None):
             LOG.info('Checking {} directory'.format(to_send_dir))
             with filesystem.chdir(to_send_dir):
                 for run in [r for r in os.listdir(to_send_dir) if re.match(filesystem.RUN_RE, r)]:
-                    _archive_run(config, run)
+                    _archive_run(run)
 
 
 #############################################################
 # Class helper methods, not exposed as commands/subcommands #
 #############################################################
-def _archive_run(config, run):
+def _archive_run(run):
     """ Archive a specific run to swestore
 
-    :param dict config: Dictionary with configurations
     :param str run: Run directory
     """
     def _send_to_swestore(f, dest, remove=True):
