@@ -73,6 +73,8 @@ def _archive_run((run,)):
     :param str run: Run directory
     """
     config = config.get_config()
+    LOG = get_logger()
+    
     def _send_to_swestore(f, dest, remove=True):
         """ Send file to swestore checking adler32 on destination and eventually
         removing the file from disk
