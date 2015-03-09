@@ -51,7 +51,7 @@ def archive_to_swestore(days, run=None):
             LOG.info('Checking {} directory'.format(to_send_dir))
             with filesystem.chdir(to_send_dir):
                 to_be_archived = [r for r in os.listdir(to_send_dir) if re.match(filesystem.RUN_RE, r)
-                                            and not os.path.exists("{}.archiving".format(run))]
+                                            and not os.path.exists("{}.archiving".format(run.split('.')[0]))]
                 pool = Pool(processes=len(to_be_archived))
                 pool.map_async(_archive_run, ((run,) for i in to_be_archived))
                 pool.close()
@@ -74,7 +74,6 @@ def _archive_run((run,)):
         :param bool remove: If True, remove original file from source
         """
         if not filesystem.is_in_swestore(f):
-            open("{}.archiving".format(f), 'w').close()
             LOG.info("Sending {} to swestore".format(f))
             misc.call_external_command_detached('iput -K -P {file} {dest}'.format(file=f, dest=dest),
                     with_log_files=True)
@@ -84,9 +83,10 @@ def _archive_run((run,)):
         if remove and filesystem.is_in_swestore(run):
             LOG.info('Removing run'.format(f))
             os.remove(f)
-        os.remove("{}.archiving".format(f))
+        os.remove("{}.archiving".format(f.split('.')[0]))
 
-
+    # Create state file to say that the run is being archived
+    open("{}.archiving".format(run.split('.')[0]), 'w').close()
     if run.endswith('bz2'):
         _send_to_swestore(run, config.get('storage').get('irods').get('irodsHome'))
     else:
