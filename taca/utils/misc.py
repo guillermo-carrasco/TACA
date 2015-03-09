@@ -67,14 +67,3 @@ def call_external_command_detached(cl, with_log_files=False):
             stdout.close()
             stderr.close()
     return p_handle
-
-
-def exists_process_with_text(text):
-    """Checks wether it exists a process which command line contains <text>
-
-    :param str text: Text to be found in the command line string of the processes
-    """
-    for process in psutil.get_process_list():
-        if text in process.cmdline:
-            return True
-    return False

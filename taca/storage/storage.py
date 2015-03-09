@@ -5,6 +5,8 @@ import re
 import shutil
 import time
 
+from multiprocessing import Pool
+
 from taca.log import LOG
 from taca.utils.config import CONFIG as config
 from taca.utils import filesystem, misc
@@ -45,18 +47,20 @@ def archive_to_swestore(days, run=None):
     # Otherwise find all runs in every data dir on the nosync partition
     else:
         LOG.info("Archiving old runs to SWESTORE")
-        for data_dir in config.get('storage').get('data_dirs'):
-            to_send_dir = os.path.join(data_dir, 'nosync')
+        for to_send_dir in config.get('storage').get('archive_dirs'):
             LOG.info('Checking {} directory'.format(to_send_dir))
             with filesystem.chdir(to_send_dir):
-                for run in [r for r in os.listdir(to_send_dir) if re.match(filesystem.RUN_RE, r)]:
-                    _archive_run(run)
-
+                to_be_archived = [r for r in os.listdir(to_send_dir) if re.match(filesystem.RUN_RE, r)
+                                            and not os.path.exists("{}.archiving".format(run))]
+                pool = Pool(processes=len(to_be_archived))
+                pool.map_async(_archive_run, ((run,) for i in to_be_archived)
+                pool.close()
+                pool.join()
 
 #############################################################
 # Class helper methods, not exposed as commands/subcommands #
 #############################################################
-def _archive_run(run):
+def _archive_run((run,)):
     """ Archive a specific run to swestore
 
     :param str run: Run directory
@@ -69,16 +73,18 @@ def _archive_run(run):
         :param str dest: Destination directory in Swestore
         :param bool remove: If True, remove original file from source
         """
-        if not filesystem.is_in_swestore(f) and not misc.exists_process_with_text(run):
+        if not filesystem.is_in_swestore(f):
+            open("{}.archiving".format(f), 'w').close()
             LOG.info("Sending {} to swestore".format(f))
             misc.call_external_command_detached('iput -K -P {file} {dest}'.format(file=f, dest=dest),
                     with_log_files=True)
             LOG.info('Run {} sent correctly and checksum was okay.'.format(f))
         else:
-            LOG.warn('Run {} is already in Swestore or currently being archived, not sending it again'.format(f))
-        if remove and filesystem.is_in_swestore(run) and not misc.exists_process_with_text(run):
+            LOG.warn('Run {} is already in Swestore, not sending it again'.format(f))
+        if remove and filesystem.is_in_swestore(run):
             LOG.info('Removing run'.format(f))
             os.remove(f)
+        os.remove("{}.archiving".format(f))
 
 
     if run.endswith('bz2'):
