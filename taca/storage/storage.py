@@ -53,7 +53,7 @@ def archive_to_swestore(days, run=None):
                 to_be_archived = [r for r in os.listdir(to_send_dir) if re.match(filesystem.RUN_RE, r)
                                             and not os.path.exists("{}.archiving".format(run))]
                 pool = Pool(processes=len(to_be_archived))
-                pool.map_async(_archive_run, ((run,) for i in to_be_archived)
+                pool.map_async(_archive_run, ((run,) for i in to_be_archived))
                 pool.close()
                 pool.join()
 
