@@ -58,7 +58,7 @@ def archive_to_swestore(days, run=None):
                                             and not os.path.exists("{}.archiving".format(r.split('.')[0]))]
                 if to_be_archived:
                     pool = Pool(processes=len(to_be_archived))
-                    pool.map_async(_archive_run, ((run,) for i in to_be_archived))
+                    pool.map_async(_archive_run, ((run,) for run in to_be_archived))
                     pool.close()
                     pool.join()
                 else:
@@ -72,9 +72,9 @@ def _archive_run((run,)):
 
     :param str run: Run directory
     """
-    config = config.get_config()
+    config = get_config()
     LOG = get_logger()
-    
+
     def _send_to_swestore(f, dest, remove=True):
         """ Send file to swestore checking adler32 on destination and eventually
         removing the file from disk
