@@ -5,10 +5,15 @@ import re
 import shutil
 import time
 
-from taca.log import LOG
-from taca.utils import filesystem
+from multiprocessing import Pool
 
-def cleanup(config, days):
+from taca.log import get_logger
+from taca.utils.config import get_config
+from taca.utils import filesystem, misc
+
+def cleanup(days):
+    config = get_config()
+    LOG = get_logger()
     for data_dir in config.get('storage').get('data_dirs'):
         with filesystem.chdir(data_dir):
             for run in [r for r in os.listdir(data_dir) if re.match(filesystem.RUN_RE, r)]:
@@ -22,7 +27,9 @@ def cleanup(config, days):
                         LOG.info('RTAComplete.txt file exists but is not older than {} day(s), skipping run {}'.format(str(days), run))
 
 
-def archive_to_swestore(config, days, run=None):
+def archive_to_swestore(days, run=None):
+    config = get_config()
+    LOG = get_logger()
     # If the run is specified in the command line, check that exists and archive
     if run:
         run = os.path.basename(run)
@@ -44,23 +51,30 @@ def archive_to_swestore(config, days, run=None):
     # Otherwise find all runs in every data dir on the nosync partition
     else:
         LOG.info("Archiving old runs to SWESTORE")
-        for data_dir in config.get('storage').get('data_dirs'):
-            to_send_dir = os.path.join(data_dir, 'nosync')
+        for to_send_dir in config.get('storage').get('archive_dirs'):
             LOG.info('Checking {} directory'.format(to_send_dir))
             with filesystem.chdir(to_send_dir):
-                for run in [r for r in os.listdir(to_send_dir) if re.match(filesystem.RUN_RE, r)]:
-                    _archive_run(config, run)
-
+                to_be_archived = [r for r in os.listdir(to_send_dir) if re.match(filesystem.RUN_RE, r)
+                                            and not os.path.exists("{}.archiving".format(r.split('.')[0]))]
+                if to_be_archived:
+                    pool = Pool(processes=len(to_be_archived))
+                    pool.map_async(_archive_run, ((run,) for run in to_be_archived))
+                    pool.close()
+                    pool.join()
+                else:
+                    LOG.info('No old runs to be archived')
 
 #############################################################
 # Class helper methods, not exposed as commands/subcommands #
 #############################################################
-def _archive_run(config, run):
+def _archive_run((run,)):
     """ Archive a specific run to swestore
 
-    :param dict config: Dictionary with configurations
     :param str run: Run directory
     """
+    config = get_config()
+    LOG = get_logger()
+
     def _send_to_swestore(f, dest, remove=True):
         """ Send file to swestore checking adler32 on destination and eventually
         removing the file from disk
@@ -71,16 +85,18 @@ def _archive_run(config, run):
         """
         if not filesystem.is_in_swestore(f):
             LOG.info("Sending {} to swestore".format(f))
-            misc.call_external_command_detached('iput -K -P {file} {dest}'.format(file=f, dest=dest),
+            misc.call_external_command('iput -K -P {file} {dest}'.format(file=f, dest=dest),
                     with_log_files=True)
             LOG.info('Run {} sent correctly and checksum was okay.'.format(f))
         else:
             LOG.warn('Run {} is already in Swestore, not sending it again'.format(f))
-        if remove:
+        if remove and filesystem.is_in_swestore(run):
             LOG.info('Removing run'.format(f))
             os.remove(f)
+        os.remove("{}.archiving".format(f.split('.')[0]))
 
-
+    # Create state file to say that the run is being archived
+    open("{}.archiving".format(run.split('.')[0]), 'w').close()
     if run.endswith('bz2'):
         _send_to_swestore(run, config.get('storage').get('irods').get('irodsHome'))
     else:

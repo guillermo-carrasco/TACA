@@ -19,9 +19,8 @@ def call_external_command(cl, with_log_files=False):
     stderr = sys.stderr
 
     if with_log_files:
-        time = datetime.now()
-        stdout = open(command + '_{}{}{}.out'.format(time.hour, time.minute, time.second), 'wa')
-        stderr = open(command + '_{}{}{}.err'.format(time.hour, time.minute, time.second), 'wa')
+        stdout = open(command + '.out', 'wa')
+        stderr = open(command + '.err', 'wa')
         started = "Started command {} on {}".format(' '.join(cl), datetime.now())
         stdout.write(started + '\n')
         stdout.write(''.join(['=']*len(cl)) + '\n')
@@ -51,9 +50,8 @@ def call_external_command_detached(cl, with_log_files=False):
     stderr = sys.stderr
 
     if with_log_files:
-        time = datetime.now()
-        stdout = open(command + '_{}{}{}.out'.format(time.hour, time.minute, time.second), 'wa')
-        stderr = open(command + '_{}{}{}.err'.format(time.hour, time.minute, time.second), 'wa')
+        stdout = open(command + '.out', 'wa')
+        stderr = open(command + '.err', 'wa')
         started = "Started command {} on {}".format(' '.join(cl), datetime.now())
         stdout.write(started + '\n')
         stdout.write(''.join(['=']*len(cl)) + '\n')
