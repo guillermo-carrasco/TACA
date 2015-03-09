@@ -55,7 +55,7 @@ def archive_to_swestore(days, run=None):
             LOG.info('Checking {} directory'.format(to_send_dir))
             with filesystem.chdir(to_send_dir):
                 to_be_archived = [r for r in os.listdir(to_send_dir) if re.match(filesystem.RUN_RE, r)
-                                            and not os.path.exists("{}.archiving".format(run.split('.')[0]))]
+                                            and not os.path.exists("{}.archiving".format(r.split('.')[0]))]
                 if to_be_archived:
                     pool = Pool(processes=len(to_be_archived))
                     pool.map_async(_archive_run, ((run,) for i in to_be_archived))
