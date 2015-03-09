@@ -34,7 +34,7 @@ def load_yaml_config(config_file):
     :raises IOError: If the config file cannot be opened.
     """
     if type(config_file) is file:
-        CONFIG = yaml.load(config_file)
+        CONFIG.update(yaml.load(config_file))
         return CONFIG
     else:
         try:
@@ -43,3 +43,8 @@ def load_yaml_config(config_file):
         except IOError as e:
             e.message = "Could not open configuration file \"{}\".".format(config_file)
             raise e
+
+
+def get_config():
+    """ Returns global configuration """
+    return CONFIG

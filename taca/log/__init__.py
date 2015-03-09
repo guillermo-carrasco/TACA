@@ -32,3 +32,7 @@ def init_logger_file(log_file, log_level='INFO'):
     fh.setLevel(log_level)
     fh.setFormatter(formatter)
     LOG.addHandler(fh)
+
+def get_logger():
+    """ Returns global logger """
+    return LOG

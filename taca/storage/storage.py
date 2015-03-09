@@ -7,11 +7,13 @@ import time
 
 from multiprocessing import Pool
 
-from taca.log import LOG
-from taca.utils.config import CONFIG as config
+from taca.log import get_logger
+from taca.utils.config import get_config
 from taca.utils import filesystem, misc
 
 def cleanup(days):
+    config = get_config()
+    LOG = get_logger()
     for data_dir in config.get('storage').get('data_dirs'):
         with filesystem.chdir(data_dir):
             for run in [r for r in os.listdir(data_dir) if re.match(filesystem.RUN_RE, r)]:
@@ -26,6 +28,8 @@ def cleanup(days):
 
 
 def archive_to_swestore(days, run=None):
+    config = get_config()
+    LOG = get_logger()
     # If the run is specified in the command line, check that exists and archive
     if run:
         run = os.path.basename(run)
@@ -52,10 +56,13 @@ def archive_to_swestore(days, run=None):
             with filesystem.chdir(to_send_dir):
                 to_be_archived = [r for r in os.listdir(to_send_dir) if re.match(filesystem.RUN_RE, r)
                                             and not os.path.exists("{}.archiving".format(run.split('.')[0]))]
-                pool = Pool(processes=len(to_be_archived))
-                pool.map_async(_archive_run, ((run,) for i in to_be_archived))
-                pool.close()
-                pool.join()
+                if to_be_archived:
+                    pool = Pool(processes=len(to_be_archived))
+                    pool.map_async(_archive_run, ((run,) for i in to_be_archived))
+                    pool.close()
+                    pool.join()
+                else:
+                    LOG.info('No old runs to be archived')
 
 #############################################################
 # Class helper methods, not exposed as commands/subcommands #
@@ -65,6 +72,7 @@ def _archive_run((run,)):
 
     :param str run: Run directory
     """
+    config = config.get_config()
     def _send_to_swestore(f, dest, remove=True):
         """ Send file to swestore checking adler32 on destination and eventually
         removing the file from disk
