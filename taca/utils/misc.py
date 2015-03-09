@@ -1,7 +1,6 @@
 """ Miscellaneous or general-use methods
 """
 import os
-import psutil
 import subprocess
 import sys
 
