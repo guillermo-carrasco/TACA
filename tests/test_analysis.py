@@ -6,7 +6,7 @@ import unittest
 
 from datetime import datetime
 
-from run_tracker import *
+from taca.analysis.analysis import *
 
 class TestTracker(unittest.TestCase):
     """ run_tracker.py script tests
@@ -88,4 +88,3 @@ class TestTracker(unittest.TestCase):
         self.assertFalse(is_transferred(os.path.basename(self.running), self.transfer_file))
         self.assertFalse(is_transferred(os.path.basename(self.to_start), self.transfer_file))
         self.assertFalse(is_transferred(os.path.basename(self.in_progress), self.transfer_file))
-

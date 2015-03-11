@@ -30,7 +30,8 @@ setup(name='taca',
     entry_points={
         'console_scripts': ['taca = taca.cli:cli'],
         'taca.subcommands': [
-            'storage = taca.storage.cli:storage'
+            'storage = taca.storage.cli:storage',
+            'analysis = taca.analysis.cli:analysis'
         ]
     },
     install_requires=install_requires
