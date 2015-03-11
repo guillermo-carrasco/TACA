@@ -90,7 +90,7 @@ def _archive_run((run,)):
             LOG.info('Run {} sent correctly and checksum was okay.'.format(f))
         else:
             LOG.warn('Run {} is already in Swestore, not sending it again'.format(f))
-        if remove and filesystem.is_in_swestore(run):
+        if remove:
             LOG.info('Removing run'.format(f))
             os.remove(f)
         os.remove("{}.archiving".format(f.split('.')[0]))
