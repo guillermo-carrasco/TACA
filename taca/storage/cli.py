@@ -5,7 +5,7 @@ from taca.storage import storage as st
 
 
 @click.group()
-@click.option('-d', '--days', default=None, help="Days to consider as thershold")
+@click.option('-d', '--days', type=click.INT, default=None, help="Days to consider as thershold")
 @click.option('-r', '--run', type=click.Path(exists=True))
 @click.pass_context
 def storage(ctx, days, run):
@@ -28,7 +28,7 @@ def archive(ctx, backend):
 @storage.command()
 @click.option('--site', type=click.Choice(['swestore','archive','illumina','analysis','nas','proc']),
               required=True, help='Site to perform cleanup')
-@click.option('--dry-run', is_flag=True, help='Perform dry run i.e. Executes nothing but log')
+@click.option('-n','--dry-run', is_flag=True, help='Perform dry run i.e. Executes nothing but log')
 @click.pass_context
 def cleanup(ctx, site, dry_run):
     """ Do appropriate cleanup on the given site i.e. NAS/processing servers/UPPMAX """

@@ -1,7 +1,8 @@
 """ Filesystem utilities
 """
-import contextlib
 import os
+import re
+import contextlib
 from subprocess import check_call, CalledProcessError, Popen, PIPE
 
 RUN_RE = '\d{6}_[a-zA-Z\d\-]+_\d{4}_[AB0][A-Z\d]'
@@ -38,7 +39,7 @@ def is_in_swestore(f):
 def list_runs_in_swestore(path,pattern=RUN_RE,no_ext=False):
     """
         Will list runs that exist in swestore
-        
+
         :param str path: swestore path to list runs
         :param str pattern: regex pattern for runs
     """
@@ -55,7 +56,7 @@ def list_runs_in_swestore(path,pattern=RUN_RE,no_ext=False):
 
 def choice_ok_to_host(c):
     """ Check if the choice given to the program is appropriate for the current host
-    
+
         :param c str: choice given to the cleanup command
     """
     choices = {'uppmax' : ['archive', '']}

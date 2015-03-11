@@ -69,16 +69,16 @@ def archive_to_swestore(days, run=None):
                     LOG.info('No old runs to be archived')
 
 def cleanup_swestore(days,dry_run=False):
-    """ Remove archived runs from swestore 
-        
+    """ Remove archived runs from swestore
+
         :param int days: Threshold days to check and remove
     """
     config = get_config()
     LOG = get_logger()
     runs = filesystem.list_runs_in_swestore(path=config.get('cleanup').get('swestore'))
     for run in runs:
-        data = run.split('_')[0]
-        if misc.days_old > days:
+        date = run.split('_')[0]
+        if misc.days_old(date) > days:
             if dry_run:
                 LOG.info('Will remove file {} from swestore'.format(run))
                 continue
