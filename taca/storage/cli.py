@@ -5,8 +5,7 @@ from taca.storage import storage as st
 
 
 @click.group()
-@click.option('-d', '--days', default=2,
-		      help="Days to consider a run old")
+@click.option('-d', '--days', default=None, help="Days to consider as thershold")
 @click.option('-r', '--run', type=click.Path(exists=True))
 @click.pass_context
 def storage(ctx, days, run):
@@ -16,19 +15,30 @@ def storage(ctx, days, run):
 # Storage subcommands
 @storage.command()
 @click.option('--backend', type=click.Choice(['swestore']), required=True,
-			  help='Long term storage backend')
+              help='Long term storage backend')
 @click.pass_context
 def archive(ctx, backend):
-	""" Archive old runs to SWESTORE
+    """ Archive old runs to SWESTORE
 	"""
-	params = ctx.parent.params
-	if backend == 'swestore':
-		st.archive_to_swestore(days=params.get('days'), run=params.get('run'))
+    params = ctx.parent.params
+    if backend == 'swestore':
+        st.archive_to_swestore(days=params.get('days'), run=params.get('run'))
 
 
 @storage.command()
+@click.option('--site', type=click.Choice(['swestore','archive','illumina','analysis','nas','proc']),
+              required=True, help='Site to perform cleanup')
+@click.option('--dry-run', is_flag=True, help='Perform dry run i.e. Executes nothing but log')
 @click.pass_context
-def cleanup(ctx):
-	""" Move old runs to nosync directory so they're not synced to the processing server """
-	params = ctx.parent.params
-	st.cleanup(days=params.get('days'))
+def cleanup(ctx, site, dry_run):
+    """ Do appropriate cleanup on the given site i.e. NAS/processing servers/UPPMAX """
+    params = ctx.parent.params
+    days = params.get('days')
+    if not days:
+        days = st.site_check_days[site]
+    if site == 'nas':
+#        st.cleanup_nas(days)
+        pass
+    if site == 'swestore':
+        st.cleanup_swestore(days,dry_run)
+        pass

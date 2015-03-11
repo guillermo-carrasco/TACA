@@ -11,7 +11,11 @@ from taca.log import get_logger
 from taca.utils.config import get_config
 from taca.utils import filesystem, misc
 
-def cleanup(days):
+## default thershold days to check on different sites ##
+site_check_days = {'nas' : 2, 'swestore' : 480, 'proc' : 2,
+                   'archive' : 90, 'illumina' : 90, 'analysis' : '90'}
+
+def cleanup_nas(days):
     config = get_config()
     LOG = get_logger()
     for data_dir in config.get('storage').get('data_dirs'):
@@ -63,6 +67,23 @@ def archive_to_swestore(days, run=None):
                     pool.join()
                 else:
                     LOG.info('No old runs to be archived')
+
+def cleanup_swestore(days,dry_run=False):
+    """ Remove archived runs from swestore 
+        
+        :param int days: Threshold days to check and remove
+    """
+    config = get_config()
+    LOG = get_logger()
+    runs = filesystem.list_runs_in_swestore(path=config.get('cleanup').get('swestore'))
+    for run in runs:
+        data = run.split('_')[0]
+        if misc.days_old > days:
+            if dry_run:
+                LOG.info('Will remove file {} from swestore'.format(run))
+                continue
+#            misc.call_external_command('irm -f {}'.format(run))
+            LOG.info('Removed file {} from swestore'.format(run))
 
 #############################################################
 # Class helper methods, not exposed as commands/subcommands #

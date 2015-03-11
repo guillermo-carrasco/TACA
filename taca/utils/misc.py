@@ -66,3 +66,17 @@ def call_external_command_detached(cl, with_log_files=False):
             stdout.close()
             stderr.close()
     return p_handle
+
+def days_old(date, date_format="%y%m%d"):
+    """ Return the number days between today and given date 
+    
+        :param string date: date to ckeck with
+        :param date_format: the format of given 'date' string
+    """
+    try:
+        d = datetime.strptime(date,"%y%m%d")
+    except ValueError:
+        return None
+    t = datetime.today()
+    time_dif = t - d
+    return(time_dif.days) 
