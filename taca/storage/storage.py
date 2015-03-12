@@ -40,7 +40,7 @@ def cleanup_nas(days):
 def archive_to_swestore(days, run=None):
     """
         Send runs (as archives) in NAS nosync to swestore for backup
-        
+
         :param int days: number fo days to check threshold
         :paran str run: specific run to send swestore
     """
@@ -61,7 +61,7 @@ def archive_to_swestore(days, run=None):
                     "the absolute path or relative path being in the correct directory.".format(run)))
             else:
                 with filesystem.chdir(base_dir):
-                    _archive_run(run)
+                    _archive_run(run, days)
         else:
             LOG.error("The name {} doesn't look like an Illumina run".format(os.path.basename(run)))
     # Otherwise find all runs in every data dir on the nosync partition
@@ -74,7 +74,7 @@ def archive_to_swestore(days, run=None):
                                             and not os.path.exists("{}.archiving".format(r.split('.')[0]))]
                 if to_be_archived:
                     pool = Pool(processes=len(to_be_archived))
-                    pool.map_async(_archive_run, ((run,) for run in to_be_archived))
+                    pool.map_async(_archive_run, ((run, days) for run in to_be_archived))
                     pool.close()
                     pool.join()
                 else:
@@ -82,9 +82,9 @@ def archive_to_swestore(days, run=None):
 
 
 def cleanup_swestore(days,dry_run=False):
-    """ 
+    """
         Remove archived runs from swestore
-        
+
         :param int days: Threshold days to check and remove
     """
     config = get_config()
@@ -103,7 +103,7 @@ def cleanup_uppmax(site,days,dry_run=False):
     """
         Remove project/run that have been closed more than 'days'
         from the given 'site' on uppmax
-        
+
         :param str site: site where the cleanup should be performed
         :param int days: number of days to check for closed projects
     """
@@ -115,20 +115,20 @@ def cleanup_uppmax(site,days,dry_run=False):
     log_file = os.path.join(root_dir,"{fl}/{fl}.log".format(fl=deleted_log))
     PRO_RE = '[a-zA-Z]+\.[a-zA-Z]+_\d{2}_\d{2}'
     db_config = config.get('statusdb',{})
-    
+
     # make a connection for project db #
     pcon = statusdb.ProjectSummaryConnection(**db_config)
     assert pcon, "Could not connect to project database in StatusDB"
-    
+
     ## work flow for cleaning up illumina/analysis ##
     if site != "archive":
         projects = [ p for p in os.listdir(root_dir) if re.match(PRO_RE,p) ]
         list_to_delete = get_closed_projects(projects,pcon,days,LOG)
-    
+
     ##work flow for cleaning archive ##
 #    else:
-        
-                
+
+
     for item in list_to_delete:
         if dry_run:
             LOG.info('Will remove {} from {}'.format(item,root_dir))
@@ -142,16 +142,15 @@ def cleanup_uppmax(site,days,dry_run=False):
         except OSError:
             LOG.warn("Could not remove path {} from {}".format(item,root_dir))
             continue
-            
+
 
 #############################################################
 # Class helper methods, not exposed as commands/subcommands #
 #############################################################
-def _archive_run((run,)):
-    """ 
-        Archive a specific run to swestore
-        
-        :param str run: Run directory
+def _archive_run((run, days)):
+    """ Archive a specific run to swestore
+
+    :param str run: Run directory
     """
     config = get_config()
     LOG = get_logger()
@@ -171,33 +170,41 @@ def _archive_run((run,)):
             LOG.info('Run {} sent correctly and checksum was okay.'.format(f))
         else:
             LOG.warn('Run {} is already in Swestore, not sending it again'.format(f))
-        if remove and filesystem.is_in_swestore(run):
+        if remove:
             LOG.info('Removing run'.format(f))
             os.remove(f)
-        os.remove("{}.archiving".format(f.split('.')[0]))
+
 
     # Create state file to say that the run is being archived
     open("{}.archiving".format(run.split('.')[0]), 'w').close()
     if run.endswith('bz2'):
-        _send_to_swestore(run, config.get('storage').get('irods').get('irodsHome'))
+        if os.stat(run).st_mtime < time.time() - (86400 * days):
+            _send_to_swestore(run, config.get('storage').get('irods').get('irodsHome'))
+        else:
+            LOG.info("Run {} is not {} days old yet. Not archiving".format(run, str(days)))
     else:
-        LOG.info("Compressing run {}".format(run))
-        # Compress with pbzip2
-        misc.call_external_command('tar --use-compress-program=pbzip2 -cf {run}.tar.bz2 {run}'.format(run=run))
-        LOG.info('Run {} successfully compressed! Removing from disk...'.format(run))
-        shutil.rmtree(run)
-        _send_to_swestore('{}.tar.bz2'.format(run), config.get('storage').get('irods').get('irodsHome'))
+        rta_file = os.path.join(run, 'RTAComplete.txt')
+        if os.stat(rta_file).st_mtime < time.time() - (86400 * days):
+            LOG.info("Compressing run {}".format(run))
+            # Compress with pbzip2
+            misc.call_external_command('tar --use-compress-program=pbzip2 -cf {run}.tar.bz2 {run}'.format(run=run))
+            LOG.info('Run {} successfully compressed! Removing from disk...'.format(run))
+            shutil.rmtree(run)
+            _send_to_swestore('{}.tar.bz2'.format(run), config.get('storage').get('irods').get('irodsHome'))
+        else:
+            LOG.info("Run {} is not {} days old yet. Not archiving".format(run, str(days)))
+    os.remove("{}.archiving".format(run.split('.')[0]))
 
 
 def get_closed_projects(projs,pj_con,days,logger=None):
     """
         Takes list of project and gives project list that are closed
         more than given check 'days'
-        
+
         :param list projs: list of projects to check
         :param obj pj_con: connection object to project database
         :param int days: number of days to check
-        :param obj logger: a logger object to perform logs when needed 
+        :param obj logger: a logger object to perform logs when needed
     """
     closed_projs = []
     for proj in projs:
@@ -215,3 +222,4 @@ def get_closed_projects(projs,pj_con,days,logger=None):
         if misc.days_old(proj_close_date,date_format='%Y-%m-%d') > days:
             closed_projs.append(proj)
     return(closed_projs)
+
