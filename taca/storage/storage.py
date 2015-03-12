@@ -2,20 +2,26 @@
 
 import os
 import re
-import shutil
 import time
+import shutil
 
 from multiprocessing import Pool
 
 from taca.log import get_logger
 from taca.utils.config import get_config
 from taca.utils import filesystem, misc
+from datetime import datetime
+from statusdb.db import connections as statusdb
 
 ## default thershold days to check on different sites ##
 site_check_days = {'nas' : 2, 'swestore' : 480, 'proc' : 2,
-                   'archive' : 90, 'illumina' : 90, 'analysis' : '90'}
+                   'archive' : 90, 'illumina' : 90, 'analysis' : 90}
 
 def cleanup_nas(days):
+    """
+        Will move the finished runs in NASes and processing server
+        to nosync directory, so they will not be processed anymore
+    """
     config = get_config()
     LOG = get_logger()
     for data_dir in config.get('storage').get('data_dirs'):
@@ -32,6 +38,12 @@ def cleanup_nas(days):
 
 
 def archive_to_swestore(days, run=None):
+    """
+        Send runs (as archives) in NAS nosync to swestore for backup
+        
+        :param int days: number fo days to check threshold
+        :paran str run: specific run to send swestore
+    """
     config = get_config()
     LOG = get_logger()
     # If the run is specified in the command line, check that exists and archive
@@ -68,9 +80,11 @@ def archive_to_swestore(days, run=None):
                 else:
                     LOG.info('No old runs to be archived')
 
-def cleanup_swestore(days,dry_run=False):
-    """ Remove archived runs from swestore
 
+def cleanup_swestore(days,dry_run=False):
+    """ 
+        Remove archived runs from swestore
+        
         :param int days: Threshold days to check and remove
     """
     config = get_config()
@@ -85,13 +99,50 @@ def cleanup_swestore(days,dry_run=False):
 #            misc.call_external_command('irm -f {}'.format(run))
             LOG.info('Removed file {} from swestore'.format(run))
 
+
+def cleanup_project(site,days,dry_run=False):
+    """
+        Remove project that have been colsed more than 'days'
+        from the given 'site'
+        
+        :param str site: site where the cleanup should be performed
+        :param int days: number of days to check for closed projects
+    """
+    config = get_config()
+    LOG = get_logger()
+    delete_log = "delivered_and_deleted"
+    PRO_RE = '[a-zA-Z]+\.[a-zA-Z]+_\d{2}_\d{2}'
+    root_dir = config.get('cleanup').get(site)
+    db_config = config.get('statusdb',{})
+    # make a connection for project db #
+    pcon = statusdb.ProjectSummaryConnection(**db_config)
+    assert pcon, "Could not connect to project database in StatusDB"
+    with filesystem.chdir(root_dir):
+        projects = [ p for p in os.listdir(root_dir) if re.match(PRO_RE,p) ]
+        for proj in projects:
+            if proj not in pcon.name_view.keys():
+                LOG.warn("Project {} is not in database, so SKIPPING it..".format(proj))
+                continue
+            proj_db_obj = pcon.get_entry(proj)
+            proj_close_date = proj_db_obj.get('close_date')
+            if proj_close_date and misc.days_old(proj_close_date,date_format='%Y-%m-%d') > days:
+                if dry_run:
+                    LOG.info('Will remove project {} from {}'.format(proj,root_dir))
+                    continue
+                remove_and_log_path(path=proj, log_file='{fl}/{fl}.log'.format(fl=delete_log), logger=LOG)
+                LOG.info('Removed project {} from {}'.format(proj,root_dir))
+            else:
+                LOG.warn("Project {} is either open or too old or closed within {} days, so SKIPPING it..".format(proj,days))
+            
+
 #############################################################
 # Class helper methods, not exposed as commands/subcommands #
 #############################################################
 def _archive_run((run,)):
-    """ Archive a specific run to swestore
-
-    :param str run: Run directory
+    """ 
+        Archive a specific run to swestore
+        
+        :param str run: Run directory
     """
     config = get_config()
     LOG = get_logger()
@@ -127,3 +178,25 @@ def _archive_run((run,)):
         LOG.info('Run {} successfully compressed! Removing from disk...'.format(run))
         shutil.rmtree(run)
         _send_to_swestore('{}.tar.bz2'.format(run), config.get('storage').get('irods').get('irodsHome'))
+
+
+def remove_and_log_path(path,log_file,logger=None):
+    """
+        Will delete the path and log info on log_file
+        
+        :param str path: the path to be removed
+        :param str log_file: a path to log the delete records
+    """
+    assert os.path.exists(path), "Path {} does not exist in {}".format(path,os.getcwd())
+    assert os.path.exists(os.path.dirname(log_file)), "Log file path {} doesn't exist".format(log_file)
+    mode = 'a' if os.path.exists(log_file) else 'w'
+    try:
+#        shutil.rmtree(path)
+        with open(log_file,mode) as to_log:
+            t = datetime.strftime(datetime.now(),'%Y-%m-%d %H:%M')
+            to_log.write("{}\t{}\n".format(path,t))
+    except OSError:
+        if logger:
+            logger.warn("Could not remove path {} from {}".format(path,os.getcwd()))
+        pass
+        

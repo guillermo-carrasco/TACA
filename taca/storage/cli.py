@@ -5,7 +5,7 @@ from taca.storage import storage as st
 
 
 @click.group()
-@click.option('-d', '--days', type=click.INT, default=None, help="Days to consider as thershold")
+@click.option('-d', '--days', type=click.INT, help="Days to consider as thershold")
 @click.option('-r', '--run', type=click.Path(exists=True))
 @click.pass_context
 def storage(ctx, days, run):
@@ -40,5 +40,8 @@ def cleanup(ctx, site, dry_run):
 #        st.cleanup_nas(days)
         pass
     if site == 'swestore':
-        st.cleanup_swestore(days,dry_run)
+#        st.cleanup_swestore(days,dry_run)
+        pass
+    if site == 'illumina' or site == 'analysis':
+        st.cleanup_project(site, days, dry_run)
         pass
