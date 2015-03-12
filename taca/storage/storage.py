@@ -2,15 +2,16 @@
 
 import os
 import re
+import csv
 import time
 import shutil
 
+from datetime import datetime
 from multiprocessing import Pool
 
 from taca.log import get_logger
 from taca.utils.config import get_config
 from taca.utils import filesystem, misc
-from datetime import datetime
 from statusdb.db import connections as statusdb
 
 ## default thershold days to check on different sites ##
@@ -120,15 +121,38 @@ def cleanup_uppmax(site,days,dry_run=False):
     pcon = statusdb.ProjectSummaryConnection(**db_config)
     assert pcon, "Could not connect to project database in StatusDB"
 
-    ## work flow for cleaning up illumina/analysis ##
     if site != "archive":
+        ## work flow for cleaning up illumina/analysis ##
         projects = [ p for p in os.listdir(root_dir) if re.match(PRO_RE,p) ]
         list_to_delete = get_closed_projects(projects,pcon,days,LOG)
-
-    ##work flow for cleaning archive ##
-#    else:
-
-
+    else:
+        ##work flow for cleaning archive ##
+        list_to_delete = []
+        runs = [ r for r in os.listdir(root_dir) if re.match(filesystem.RUN_RE,r) ]
+        with filesystem.chdir(root_dir):
+            for run in runs:
+                fcid = run.split('_')[3]
+                fcid = fcid if re.search('-',fcid) else fcid[1:]
+                ## fetch and prarse samplesheet to get projects ##
+                try:
+                    ssheet = [c for c in os.listdir(run) if re.search('{}.csv|SampleSheet.csv'.format(fcid),c)][0]
+                except IndexError:
+                    LOG.warn("Could not find expected samplesheet for run {}, so SKIPPING..")
+                    continue
+                with open(os.path.join(run,ssheet),'r') as ss:
+                    try:
+                        run_projs = list(set([ d['SampleProject'].replace('__','.') for d in csv.DictReader(ss) ]))
+                    except KeyError:
+                        LOG.warn("Samplesheet is not in expected format for run {}".format(run))
+                        continue
+                ## check if all projects of the run have been closed ##
+                if len(run_projs) == len(get_closed_projects(run_projs,pcon,days)):
+                    list_to_delete.append(run)
+                else:
+                    LOG.warn("All projects that were ran on {} are not closed, so SKIPPING".format(run))
+                    continue
+    
+    ## delete and log
     for item in list_to_delete:
         if dry_run:
             LOG.info('Will remove {} from {}'.format(item,root_dir))
@@ -222,4 +246,3 @@ def get_closed_projects(projs,pj_con,days,logger=None):
         if misc.days_old(proj_close_date,date_format='%Y-%m-%d') > days:
             closed_projs.append(proj)
     return(closed_projs)
-

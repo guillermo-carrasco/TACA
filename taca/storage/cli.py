@@ -37,11 +37,8 @@ def cleanup(ctx, site, dry_run):
     if not days:
         days = st.site_check_days[site]
     if site == 'nas':
-#        st.cleanup_nas(days)
-        pass
+        st.cleanup_nas(days)
     if site == 'swestore':
-#        st.cleanup_swestore(days,dry_run)
-        pass
+        st.cleanup_swestore(days,dry_run)
     if site in ['illumina','analysis','archive']:
         st.cleanup_uppmax(site, days, dry_run)
-        pass

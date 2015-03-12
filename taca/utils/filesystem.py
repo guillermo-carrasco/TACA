@@ -53,10 +53,3 @@ def list_runs_in_swestore(path,pattern=RUN_RE,no_ext=False):
         return(runs)
     except CalledProcessError:
         return []
-
-def choice_ok_to_host(c):
-    """ Check if the choice given to the program is appropriate for the current host
-
-        :param c str: choice given to the cleanup command
-    """
-    choices = {'uppmax' : ['archive', '']}
