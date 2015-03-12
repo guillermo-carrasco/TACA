@@ -45,7 +45,7 @@ def archive_to_swestore(days, run=None):
                     "the absolute path or relative path being in the correct directory.".format(run)))
             else:
                 with filesystem.chdir(base_dir):
-                    _archive_run(run)
+                    _archive_run(run, days)
         else:
             LOG.error("The name {} doesn't look like an Illumina run".format(os.path.basename(run)))
     # Otherwise find all runs in every data dir on the nosync partition
@@ -58,7 +58,7 @@ def archive_to_swestore(days, run=None):
                                             and not os.path.exists("{}.archiving".format(r.split('.')[0]))]
                 if to_be_archived:
                     pool = Pool(processes=len(to_be_archived))
-                    pool.map_async(_archive_run, ((run,) for run in to_be_archived))
+                    pool.map_async(_archive_run, ((run, days) for run in to_be_archived))
                     pool.close()
                     pool.join()
                 else:
@@ -67,7 +67,7 @@ def archive_to_swestore(days, run=None):
 #############################################################
 # Class helper methods, not exposed as commands/subcommands #
 #############################################################
-def _archive_run((run,)):
+def _archive_run((run, days)):
     """ Archive a specific run to swestore
 
     :param str run: Run directory
@@ -93,16 +93,24 @@ def _archive_run((run,)):
         if remove:
             LOG.info('Removing run'.format(f))
             os.remove(f)
-        os.remove("{}.archiving".format(f.split('.')[0]))
+
 
     # Create state file to say that the run is being archived
     open("{}.archiving".format(run.split('.')[0]), 'w').close()
     if run.endswith('bz2'):
-        _send_to_swestore(run, config.get('storage').get('irods').get('irodsHome'))
+        if os.stat(run).st_mtime < time.time() - (86400 * days):
+            _send_to_swestore(run, config.get('storage').get('irods').get('irodsHome'))
+        else:
+            LOG.info("Run {} is not {} days old yet. Not archiving".format(run, str(days)))
     else:
-        LOG.info("Compressing run {}".format(run))
-        # Compress with pbzip2
-        misc.call_external_command('tar --use-compress-program=pbzip2 -cf {run}.tar.bz2 {run}'.format(run=run))
-        LOG.info('Run {} successfully compressed! Removing from disk...'.format(run))
-        shutil.rmtree(run)
-        _send_to_swestore('{}.tar.bz2'.format(run), config.get('storage').get('irods').get('irodsHome'))
+        rta_file = os.path.join(run, 'RTAComplete.txt')
+        if os.stat(rta_file).st_mtime < time.time() - (86400 * days):
+            LOG.info("Compressing run {}".format(run))
+            # Compress with pbzip2
+            misc.call_external_command('tar --use-compress-program=pbzip2 -cf {run}.tar.bz2 {run}'.format(run=run))
+            LOG.info('Run {} successfully compressed! Removing from disk...'.format(run))
+            shutil.rmtree(run)
+            _send_to_swestore('{}.tar.bz2'.format(run), config.get('storage').get('irods').get('irodsHome'))
+        else:
+            LOG.info("Run {} is not {} days old yet. Not archiving".format(run, str(days)))
+    os.remove("{}.archiving".format(run.split('.')[0]))
