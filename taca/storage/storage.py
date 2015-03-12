@@ -125,8 +125,12 @@ def cleanup_project(site,days,dry_run=False):
                 LOG.warn("Project {} is not in database, so SKIPPING it..".format(proj))
                 continue
             proj_db_obj = pcon.get_entry(proj)
-            proj_close_date = proj_db_obj.get('close_date')
-            if proj_close_date and misc.days_old(proj_close_date,date_format='%Y-%m-%d') > days:
+            try:
+                proj_close_date = proj_db_obj['close_date']
+            except KeyError:
+                LOG.warn("Project {} is either open or too old, so SKIPPING it..".format(proj))
+                continue
+            if misc.days_old(proj_close_date,date_format='%Y-%m-%d') > days:
                 if dry_run:
                     LOG.info('Will remove project {} from {}'.format(proj,root_dir))
                     continue
@@ -140,8 +144,6 @@ def cleanup_project(site,days,dry_run=False):
                 except OSError:
                     LOG.warn("Could not remove path {} from {}".format(path,os.getcwd()))
                     continue
-            else:
-                LOG.warn("Project {} is either open or too old or closed within {} days, so SKIPPING it..".format(proj,days))
             
 
 #############################################################
