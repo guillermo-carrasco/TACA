@@ -97,7 +97,7 @@ def cleanup_swestore(days,dry_run=False):
             if dry_run:
                 LOG.info('Will remove file {} from swestore'.format(run))
                 continue
-#            misc.call_external_command('irm -f {}'.format(run))
+            misc.call_external_command('irm -f {}'.format(run))
             LOG.info('Removed file {} from swestore'.format(run))
 
 def cleanup_uppmax(site,days,dry_run=False):
@@ -158,7 +158,7 @@ def cleanup_uppmax(site,days,dry_run=False):
             LOG.info('Will remove {} from {}'.format(item,root_dir))
             continue
         try:
-#            shutil.rmtree(os.path.join(root_dir,item))
+            shutil.rmtree(os.path.join(root_dir,item))
             LOG.info('Removed project {} from {}'.format(item,root_dir))
             mode = 'a' if os.path.exists(log_file) else 'w'
             with open(log_file,mode) as to_log:
