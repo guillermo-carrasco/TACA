@@ -42,6 +42,6 @@ def cleanup(ctx, site, dry_run):
     if site == 'swestore':
 #        st.cleanup_swestore(days,dry_run)
         pass
-    if site == 'illumina' or site == 'analysis':
-        st.cleanup_project(site, days, dry_run)
+    if site in ['illumina','analysis','archive']:
+        st.cleanup_uppmax(site, days, dry_run)
         pass

@@ -99,51 +99,49 @@ def cleanup_swestore(days,dry_run=False):
 #            misc.call_external_command('irm -f {}'.format(run))
             LOG.info('Removed file {} from swestore'.format(run))
 
-
-def cleanup_project(site,days,dry_run=False):
+def cleanup_uppmax(site,days,dry_run=False):
     """
-        Remove project that have been colsed more than 'days'
-        from the given 'site'
+        Remove project/run that have been closed more than 'days'
+        from the given 'site' on uppmax
         
         :param str site: site where the cleanup should be performed
         :param int days: number of days to check for closed projects
     """
     config = get_config()
     LOG = get_logger()
-    delete_log = "delivered_and_deleted"
-    PRO_RE = '[a-zA-Z]+\.[a-zA-Z]+_\d{2}_\d{2}'
     root_dir = config.get('cleanup').get(site)
+    deleted_log = config.get('cleanup').get('deleted_log')
+    assert os.path.exists(os.path.join(root_dir,deleted_log)), "Log directory {} doesn't exist in {}".format(deleted_log,root_dir)
+    log_file = os.path.join(root_dir,"{fl}/{fl}.log".format(fl=deleted_log))
+    PRO_RE = '[a-zA-Z]+\.[a-zA-Z]+_\d{2}_\d{2}'
     db_config = config.get('statusdb',{})
+    
     # make a connection for project db #
     pcon = statusdb.ProjectSummaryConnection(**db_config)
     assert pcon, "Could not connect to project database in StatusDB"
-    with filesystem.chdir(root_dir):
-        assert os.path.exists(delete_log), "Log directory {} doesn't exist in {}".format(delete_log,root_dir)
+    
+    ## work flow for cleaning up illumina/analysis ##
+    if site != "archive":
         projects = [ p for p in os.listdir(root_dir) if re.match(PRO_RE,p) ]
-        for proj in projects:
-            if proj not in pcon.name_view.keys():
-                LOG.warn("Project {} is not in database, so SKIPPING it..".format(proj))
-                continue
-            proj_db_obj = pcon.get_entry(proj)
-            try:
-                proj_close_date = proj_db_obj['close_date']
-            except KeyError:
-                LOG.warn("Project {} is either open or too old, so SKIPPING it..".format(proj))
-                continue
-            if misc.days_old(proj_close_date,date_format='%Y-%m-%d') > days:
-                if dry_run:
-                    LOG.info('Will remove project {} from {}'.format(proj,root_dir))
-                    continue
-                try:
-            #        shutil.rmtree(proj)
-                    log_file = "{fl}/{fl}.log".format(fl=delete_log)
-                    mode = 'a' if os.path.exists(log_file) else 'w'
-                    LOG.info('Removed project {} from {}'.format(proj,root_dir))
-                    with open(log_file,mode) as to_log:
-                        to_log.write("{}\t{}\n".format(proj,datetime.strftime(datetime.now(),'%Y-%m-%d %H:%M')))
-                except OSError:
-                    LOG.warn("Could not remove path {} from {}".format(path,os.getcwd()))
-                    continue
+        list_to_delete = get_closed_projects(projects,pcon,days,LOG)
+    
+    ##work flow for cleaning archive ##
+#    else:
+        
+                
+    for item in list_to_delete:
+        if dry_run:
+            LOG.info('Will remove {} from {}'.format(item,root_dir))
+            continue
+        try:
+#            shutil.rmtree(os.path.join(root_dir,item))
+            LOG.info('Removed project {} from {}'.format(item,root_dir))
+            mode = 'a' if os.path.exists(log_file) else 'w'
+            with open(log_file,mode) as to_log:
+                to_log.write("{}\t{}\n".format(item,datetime.strftime(datetime.now(),'%Y-%m-%d %H:%M')))
+        except OSError:
+            LOG.warn("Could not remove path {} from {}".format(item,root_dir))
+            continue
             
 
 #############################################################
@@ -189,3 +187,31 @@ def _archive_run((run,)):
         LOG.info('Run {} successfully compressed! Removing from disk...'.format(run))
         shutil.rmtree(run)
         _send_to_swestore('{}.tar.bz2'.format(run), config.get('storage').get('irods').get('irodsHome'))
+
+
+def get_closed_projects(projs,pj_con,days,logger=None):
+    """
+        Takes list of project and gives project list that are closed
+        more than given check 'days'
+        
+        :param list projs: list of projects to check
+        :param obj pj_con: connection object to project database
+        :param int days: number of days to check
+        :param obj logger: a logger object to perform logs when needed 
+    """
+    closed_projs = []
+    for proj in projs:
+        if proj not in pj_con.name_view.keys():
+            if logger:
+                logger.warn("Project {} is not in database, so SKIPPING it..".format(proj))
+            continue
+        proj_db_obj = pj_con.get_entry(proj)
+        try:
+            proj_close_date = proj_db_obj['close_date']
+        except KeyError:
+            if logger:
+                logger.warn("Project {} is either open or too old, so SKIPPING it..".format(proj))
+            continue
+        if misc.days_old(proj_close_date,date_format='%Y-%m-%d') > days:
+            closed_projs.append(proj)
+    return(closed_projs)
