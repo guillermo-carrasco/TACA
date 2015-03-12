@@ -142,7 +142,7 @@ def cleanup_uppmax(site,days,dry_run=False):
                 with open(os.path.join(run,ssheet),'r') as ss:
                     try:
                         run_projs = list(set([ d['SampleProject'].replace('__','.') for d in csv.DictReader(ss) ]))
-                    except KeyError:
+                    except:
                         LOG.warn("Samplesheet is not in expected format for run {}".format(run))
                         continue
                 ## check if all projects of the run have been closed ##
@@ -151,7 +151,7 @@ def cleanup_uppmax(site,days,dry_run=False):
                 else:
                     LOG.warn("All projects that were ran on {} are not closed, so SKIPPING".format(run))
                     continue
-    
+
     ## delete and log
     for item in list_to_delete:
         if dry_run:
