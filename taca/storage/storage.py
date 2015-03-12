@@ -118,6 +118,7 @@ def cleanup_project(site,days,dry_run=False):
     pcon = statusdb.ProjectSummaryConnection(**db_config)
     assert pcon, "Could not connect to project database in StatusDB"
     with filesystem.chdir(root_dir):
+        assert os.path.exists(delete_log), "Log directory {} doesn't exist in {}".format(delete_log,root_dir)
         projects = [ p for p in os.listdir(root_dir) if re.match(PRO_RE,p) ]
         for proj in projects:
             if proj not in pcon.name_view.keys():
@@ -129,8 +130,16 @@ def cleanup_project(site,days,dry_run=False):
                 if dry_run:
                     LOG.info('Will remove project {} from {}'.format(proj,root_dir))
                     continue
-                remove_and_log_path(path=proj, log_file='{fl}/{fl}.log'.format(fl=delete_log), logger=LOG)
-                LOG.info('Removed project {} from {}'.format(proj,root_dir))
+                try:
+            #        shutil.rmtree(proj)
+                    log_file = "{fl}/{fl}.log".format(fl=delete_log)
+                    mode = 'a' if os.path.exists(log_file) else 'w'
+                    LOG.info('Removed project {} from {}'.format(proj,root_dir))
+                    with open(log_file,mode) as to_log:
+                        to_log.write("{}\t{}\n".format(proj,datetime.strftime(datetime.now(),'%Y-%m-%d %H:%M')))
+                except OSError:
+                    LOG.warn("Could not remove path {} from {}".format(path,os.getcwd()))
+                    continue
             else:
                 LOG.warn("Project {} is either open or too old or closed within {} days, so SKIPPING it..".format(proj,days))
             
@@ -178,25 +187,3 @@ def _archive_run((run,)):
         LOG.info('Run {} successfully compressed! Removing from disk...'.format(run))
         shutil.rmtree(run)
         _send_to_swestore('{}.tar.bz2'.format(run), config.get('storage').get('irods').get('irodsHome'))
-
-
-def remove_and_log_path(path,log_file,logger=None):
-    """
-        Will delete the path and log info on log_file
-        
-        :param str path: the path to be removed
-        :param str log_file: a path to log the delete records
-    """
-    assert os.path.exists(path), "Path {} does not exist in {}".format(path,os.getcwd())
-    assert os.path.exists(os.path.dirname(log_file)), "Log file path {} doesn't exist".format(log_file)
-    mode = 'a' if os.path.exists(log_file) else 'w'
-    try:
-#        shutil.rmtree(path)
-        with open(log_file,mode) as to_log:
-            t = datetime.strftime(datetime.now(),'%Y-%m-%d %H:%M')
-            to_log.write("{}\t{}\n".format(path,t))
-    except OSError:
-        if logger:
-            logger.warn("Could not remove path {} from {}".format(path,os.getcwd()))
-        pass
-        
