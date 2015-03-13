@@ -35,8 +35,6 @@ def cleanup(ctx, site, dry_run):
     """ Do appropriate cleanup on the given site i.e. NAS/processing servers/UPPMAX """
     params = ctx.parent.params
     days = params.get('days')
-    ## if the days are not given in command 
-    ## Get default days (should exist) from config file
     if site == 'nas':
         st.cleanup_nas(days)
     if site == 'processing-server':
