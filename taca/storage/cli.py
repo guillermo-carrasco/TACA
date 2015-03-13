@@ -2,7 +2,6 @@
 """
 import click
 from taca.storage import storage as st
-from taca.utils.config import get_config
 
 
 @click.group()
