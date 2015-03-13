@@ -2,6 +2,7 @@
 """
 import click
 from taca.storage import storage as st
+from taca.utils.config import get_config
 
 
 @click.group()
@@ -26,7 +27,7 @@ def archive(ctx, backend):
 
 
 @storage.command()
-@click.option('--site', type=click.Choice(['swestore','archive','illumina','analysis','nas','proc']),
+@click.option('-s','--site', type=click.Choice(['swestore','archive','illumina','analysis','nas','processing-server']),
               required=True, help='Site to perform cleanup')
 @click.option('-n','--dry-run', is_flag=True, help='Perform dry run i.e. Executes nothing but log')
 @click.pass_context
@@ -34,11 +35,13 @@ def cleanup(ctx, site, dry_run):
     """ Do appropriate cleanup on the given site i.e. NAS/processing servers/UPPMAX """
     params = ctx.parent.params
     days = params.get('days')
-    if not days:
-        days = st.site_check_days[site]
+    ## if the days are not given in command 
+    ## Get default days (should exist) from config file
     if site == 'nas':
         st.cleanup_nas(days)
+    if site == 'processing-server':
+        raise NotImplementedError('Method for this site is not implemented yet')
     if site == 'swestore':
-        st.cleanup_swestore(days,dry_run)
+        st.cleanup_swestore(days, dry_run)
     if site in ['illumina','analysis','archive']:
         st.cleanup_uppmax(site, days, dry_run)
