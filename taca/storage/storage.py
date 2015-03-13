@@ -14,14 +14,12 @@ from taca.utils.config import get_config
 from taca.utils import filesystem, misc
 from statusdb.db import connections as statusdb
 
-## default thershold days to check on different sites ##
-site_check_days = {'nas' : 2, 'swestore' : 480, 'proc' : 2,
-                   'archive' : 90, 'illumina' : 90, 'analysis' : 90}
 
 def cleanup_nas(days):
-    """
-        Will move the finished runs in NASes and processing server
-        to nosync directory, so they will not be processed anymore
+    """Will move the finished runs in NASes and processing server
+    to nosync directory, so they will not be processed anymore
+    
+    :param int days: number fo days to check threshold
     """
     config = get_config()
     LOG = get_logger()
@@ -39,11 +37,10 @@ def cleanup_nas(days):
 
 
 def archive_to_swestore(days, run=None):
-    """
-        Send runs (as archives) in NAS nosync to swestore for backup
+    """Send runs (as archives) in NAS nosync to swestore for backup
 
-        :param int days: number fo days to check threshold
-        :paran str run: specific run to send swestore
+    :param int days: number fo days to check threshold
+    :paran str run: specific run to send swestore
     """
     config = get_config()
     LOG = get_logger()
@@ -82,15 +79,17 @@ def archive_to_swestore(days, run=None):
                     LOG.info('No old runs to be archived')
 
 
-def cleanup_swestore(days,dry_run=False):
-    """
-        Remove archived runs from swestore
+def cleanup_swestore(days, dry_run=False):
+    """Remove archived runs from swestore
 
-        :param int days: Threshold days to check and remove
+    :param int days: Threshold days to check and remove
     """
     config = get_config()
     LOG = get_logger()
-    runs = filesystem.list_runs_in_swestore(path=config.get('cleanup').get('swestore'))
+    days = check_days('swestore', days, config)
+    if not days:
+        return
+    runs = filesystem.list_runs_in_swestore(path=config.get('cleanup').get('swestore').get('root'))
     for run in runs:
         date = run.split('_')[0]
         if misc.days_old(date) > days:
@@ -100,44 +99,46 @@ def cleanup_swestore(days,dry_run=False):
             misc.call_external_command('irm -f {}'.format(run))
             LOG.info('Removed file {} from swestore'.format(run))
 
-def cleanup_uppmax(site,days,dry_run=False):
-    """
-        Remove project/run that have been closed more than 'days'
-        from the given 'site' on uppmax
+def cleanup_uppmax(site, days, dry_run=False):
+    """Remove project/run that have been closed more than 'days'
+    from the given 'site' on uppmax
 
-        :param str site: site where the cleanup should be performed
-        :param int days: number of days to check for closed projects
+    :param str site: site where the cleanup should be performed
+    :param int days: number of days to check for closed projects
     """
     config = get_config()
     LOG = get_logger()
-    root_dir = config.get('cleanup').get(site)
+    days = check_days(site, days, config)
+    if not days:
+        return
+    root_dir = config.get('cleanup').get(site).get('root')
     deleted_log = config.get('cleanup').get('deleted_log')
     assert os.path.exists(os.path.join(root_dir,deleted_log)), "Log directory {} doesn't exist in {}".format(deleted_log,root_dir)
     log_file = os.path.join(root_dir,"{fl}/{fl}.log".format(fl=deleted_log))
-    PRO_RE = '[a-zA-Z]+\.[a-zA-Z]+_\d{2}_\d{2}'
-    db_config = config.get('statusdb',{})
 
     # make a connection for project db #
-    pcon = statusdb.ProjectSummaryConnection(**db_config)
+    pcon = statusdb.ProjectSummaryConnection()
     assert pcon, "Could not connect to project database in StatusDB"
 
     if site != "archive":
         ## work flow for cleaning up illumina/analysis ##
-        projects = [ p for p in os.listdir(root_dir) if re.match(PRO_RE,p) ]
-        list_to_delete = get_closed_projects(projects,pcon,days,LOG)
+        projects = [ p for p in os.listdir(root_dir) if re.match(filesystem.PROJECT_RE,p) ]
+        list_to_delete = get_closed_projects(projects, pcon, days, LOG)
     else:
         ##work flow for cleaning archive ##
         list_to_delete = []
+        archived_in_swestore = filesystem.list_runs_in_swestore(path=config.get('cleanup').get('swestore').get('root'), no_ext=True)
         runs = [ r for r in os.listdir(root_dir) if re.match(filesystem.RUN_RE,r) ]
         with filesystem.chdir(root_dir):
             for run in runs:
                 fcid = run.split('_')[3]
+                ## Mi-seq have different fcid format, take accordingly
                 fcid = fcid if re.search('-',fcid) else fcid[1:]
                 ## fetch and prarse samplesheet to get projects ##
                 try:
                     ssheet = [c for c in os.listdir(run) if re.search('{}.csv|SampleSheet.csv'.format(fcid),c)][0]
                 except IndexError:
-                    LOG.warn("Could not find expected samplesheet for run {}, so SKIPPING..")
+                    LOG.warn("Could not find expected samplesheet for run {}, so SKIPPING..".format(run))
                     continue
                 with open(os.path.join(run,ssheet),'r') as ss:
                     try:
@@ -145,8 +146,8 @@ def cleanup_uppmax(site,days,dry_run=False):
                     except:
                         LOG.warn("Samplesheet is not in expected format for run {}".format(run))
                         continue
-                ## check if all projects of the run have been closed ##
-                if len(run_projs) == len(get_closed_projects(run_projs,pcon,days)):
+                ## check if all projects of the run have been closed and if it exists in swestore##
+                if len(run_projs) == len(get_closed_projects(run_projs, pcon, days)) and run in archived_in_swestore:
                     list_to_delete.append(run)
                 else:
                     LOG.warn("All projects that were ran on {} are not closed, so SKIPPING".format(run))
@@ -160,8 +161,7 @@ def cleanup_uppmax(site,days,dry_run=False):
         try:
             shutil.rmtree(os.path.join(root_dir,item))
             LOG.info('Removed project {} from {}'.format(item,root_dir))
-            mode = 'a' if os.path.exists(log_file) else 'w'
-            with open(log_file,mode) as to_log:
+            with open(log_file,'a') as to_log:
                 to_log.write("{}\t{}\n".format(item,datetime.strftime(datetime.now(),'%Y-%m-%d %H:%M')))
         except OSError:
             LOG.warn("Could not remove path {} from {}".format(item,root_dir))
@@ -198,7 +198,6 @@ def _archive_run((run, days)):
             LOG.info('Removing run'.format(f))
             os.remove(f)
 
-
     # Create state file to say that the run is being archived
     open("{}.archiving".format(run.split('.')[0]), 'w').close()
     if run.endswith('bz2'):
@@ -220,15 +219,14 @@ def _archive_run((run, days)):
     os.remove("{}.archiving".format(run.split('.')[0]))
 
 
-def get_closed_projects(projs,pj_con,days,logger=None):
-    """
-        Takes list of project and gives project list that are closed
-        more than given check 'days'
+def get_closed_projects(projs, pj_con, days, logger=None):
+    """Takes list of project and gives project list that are closed
+    more than given check 'days'
 
-        :param list projs: list of projects to check
-        :param obj pj_con: connection object to project database
-        :param int days: number of days to check
-        :param obj logger: a logger object to perform logs when needed
+    :param list projs: list of projects to check
+    :param obj pj_con: connection object to project database
+    :param int days: number of days to check
+    :param obj logger: a logger object to perform logs when needed
     """
     closed_projs = []
     for proj in projs:
@@ -245,4 +243,29 @@ def get_closed_projects(projs,pj_con,days,logger=None):
             continue
         if misc.days_old(proj_close_date,date_format='%Y-%m-%d') > days:
             closed_projs.append(proj)
-    return(closed_projs)
+    return closed_projs
+
+
+def check_days(site, days, config):
+    """Check if 'days' given while running command. If not take the default threshold
+    from config file (which should exist). Also when 'days' given on the command line
+    raise a check to make sure it was really meant to do so
+    
+    :param str site: site to be cleaned and relevent date to pick
+    :param int days: number of days to check, will be None if '-d' not used
+    :param dict config: config file parsed and saved as dictionary
+    """
+    try:
+        default_days = config['cleanup'][site]['days']
+    except KeyError:
+        raise
+    if not days:
+        return default_days
+    elif days >= default_days:
+        return days
+    else:
+        if misc.query_yes_no("Seems like given days({}) is less than the default({}), "\
+        "are you sure to proceed ?".format(days,default_days), default="no"):
+            return days
+        else:
+            return None

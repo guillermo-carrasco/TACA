@@ -6,6 +6,7 @@ import contextlib
 from subprocess import check_call, CalledProcessError, Popen, PIPE
 
 RUN_RE = '\d{6}_[a-zA-Z\d\-]+_\d{4}_[AB0][A-Z\d]'
+PROJECT_RE = '[a-zA-Z]+\.[a-zA-Z]+_\d{2}_\d{2}'
 
 @contextlib.contextmanager
 def chdir(new_dir):
@@ -36,7 +37,7 @@ def is_in_swestore(f):
         else:
             return True
 
-def list_runs_in_swestore(path,pattern=RUN_RE,no_ext=False):
+def list_runs_in_swestore(path, pattern=RUN_RE, no_ext=False):
     """
         Will list runs that exist in swestore
 
@@ -46,10 +47,10 @@ def list_runs_in_swestore(path,pattern=RUN_RE,no_ext=False):
     try:
         status = check_call(['icd', path])
         proc = Popen(['ils'], stdout=PIPE)
-        contents = [ c.strip() for c in proc.stdout.readlines() ]
-        runs = [ r for r in contents if re.match(pattern, r) ]
+        contents = [c.strip() for c in proc.stdout.readlines()]
+        runs = [r for r in contents if re.match(pattern, r)]
         if no_ext:
-            runs = [ r.split('.')[0] for r in runs ]
-        return(runs)
+            runs = [r.split('.')[0] for r in runs]
+        return runs
     except CalledProcessError:
         return []
