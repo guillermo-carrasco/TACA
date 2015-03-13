@@ -264,7 +264,8 @@ def check_days(site, days, config):
     elif days >= default_days:
         return days
     else:
-        if misc.query_yes_no("Seems like given days({}) is less than the default({}), are you sure to proceed ?".format(days,default_days), default="no"):
+        if misc.query_yes_no("Seems like given days({}) is less than the default({}), "\
+        "are you sure to proceed ?".format(days,default_days), default="no"):
             return days
         else:
             return None
