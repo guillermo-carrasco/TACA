@@ -40,7 +40,7 @@ def archive_to_swestore(days, run=None):
     """Send runs (as archives) in NAS nosync to swestore for backup
 
     :param int days: number fo days to check threshold
-    :paran str run: specific run to send swestore
+    :param str run: specific run to send swestore
     """
     config = get_config()
     LOG = get_logger()
