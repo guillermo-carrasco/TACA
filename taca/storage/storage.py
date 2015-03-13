@@ -127,7 +127,7 @@ def cleanup_uppmax(site, days, dry_run=False):
     else:
         ##work flow for cleaning archive ##
         list_to_delete = []
-        archived_in_swestore = filesystem.list_runs_in_swestore(path=config.get('cleanup').get('swestore'), no_ext=True)
+        archived_in_swestore = filesystem.list_runs_in_swestore(path=config.get('cleanup').get('swestore').get('root'), no_ext=True)
         runs = [ r for r in os.listdir(root_dir) if re.match(filesystem.RUN_RE,r) ]
         with filesystem.chdir(root_dir):
             for run in runs:
