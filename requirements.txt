@@ -1,4 +1,4 @@
 click
 requests
 pyyaml
-https://github.com/SciLifeLab/statusdb/archive/master.zip#egg=statusdb
+statusdb
