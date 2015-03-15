@@ -407,12 +407,12 @@ def run_bcl2fastq(run, config):
         transfer_run(run, config)
 
 
-def run_demultiplexing():
+def run_demultiplexing(run):
     """ Run demultiplexing in all data directories """
     config = get_config()['preprocessing']
     LOG = get_logger()
 
-    hiseq_runs = glob.glob(os.path.join(config['hiseq_data'], '1*XX'))
+    hiseq_runs = glob.glob(os.path.join(config['hiseq_data'], '1*XX')) if not run else [run]
     for run in hiseq_runs:
         run_name = os.path.basename(run)
         LOG.info('Checking run {}'.format(run_name))
