@@ -11,9 +11,9 @@ def analysis():
 
 # analysis subcommands
 @analysis.command()
-@analysis.option('-r', '--run', type=click.Path(exists=True), default=None,
+@click.option('-r', '--run', type=click.Path(exists=True), default=None,
 				 help='Demultiplex only a particular run')
-def demultiplex(ctx, run):
+def demultiplex(run):
 	""" Demultiplex all runs present in the data directories
 	"""
 	an.run_demultiplexing(run)

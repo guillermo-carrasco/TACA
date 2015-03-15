@@ -6,7 +6,7 @@ import sys
 
 from datetime import datetime
 
-def call_external_command(cl, with_log_files=False):
+def call_external_command(cl, with_log_files=False, prefix=None):
     """ Executes an external command
 
     :param string cl: Command line to be executed (command + options and parameters)
@@ -19,6 +19,8 @@ def call_external_command(cl, with_log_files=False):
     stderr = sys.stderr
 
     if with_log_files:
+        if prefix:
+            command = '{}_{}'.format(prefix, command)
         stdout = open(command + '.out', 'wa')
         stderr = open(command + '.err', 'wa')
         started = "Started command {} on {}".format(' '.join(cl), datetime.now())
@@ -37,7 +39,7 @@ def call_external_command(cl, with_log_files=False):
 
 
 
-def call_external_command_detached(cl, with_log_files=False):
+def call_external_command_detached(cl, with_log_files=False, prefix=None):
     """ Executes an external command
 
         :param string cl: Command line to be executed (command + options and parameters)
@@ -50,6 +52,8 @@ def call_external_command_detached(cl, with_log_files=False):
     stderr = sys.stderr
 
     if with_log_files:
+        if prefix:
+            command = '{}_{}'.format(prefix, command)
         stdout = open(command + '.out', 'wa')
         stderr = open(command + '.err', 'wa')
         started = "Started command {} on {}".format(' '.join(cl), datetime.now())
