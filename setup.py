@@ -11,6 +11,13 @@ try:
 except IOError:
     install_requires = []
 
+try:
+    with open("dependency_links.txt", "r") as f:
+        dependency_links = [x.strip() for x in f.readlines()]
+except IOError:
+    dependency_links = []
+
+
 setup(name='taca',
     version=__version__,
     description="Tool for the Automation of Cleanup and Analyses",
@@ -34,5 +41,6 @@ setup(name='taca',
             'analysis = taca.analysis.cli:analysis'
         ]
     },
-    install_requires=install_requires
+    install_requires=install_requires,
+    dependency_links=dependency_links
 )
