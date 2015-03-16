@@ -24,6 +24,7 @@ def cleanup_nas(days):
     config = get_config()
     LOG = get_logger()
     for data_dir in config.get('storage').get('data_dirs'):
+        LOG.info('Moving old runs in {}'.format(data_dir))
         with filesystem.chdir(data_dir):
             for run in [r for r in os.listdir(data_dir) if re.match(filesystem.RUN_RE, r)]:
                 rta_file = os.path.join(run, 'RTAComplete.txt')

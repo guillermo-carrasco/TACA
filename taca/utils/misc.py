@@ -6,7 +6,7 @@ import sys
 
 from datetime import datetime
 
-def call_external_command(cl, with_log_files=False):
+def call_external_command(cl, with_log_files=False, prefix=None):
     """ Executes an external command
 
     :param string cl: Command line to be executed (command + options and parameters)
@@ -19,6 +19,8 @@ def call_external_command(cl, with_log_files=False):
     stderr = sys.stderr
 
     if with_log_files:
+        if prefix:
+            command = '{}_{}'.format(prefix, command)
         stdout = open(command + '.out', 'wa')
         stderr = open(command + '.err', 'wa')
         started = "Started command {} on {}".format(' '.join(cl), datetime.now())
@@ -36,7 +38,8 @@ def call_external_command(cl, with_log_files=False):
             stderr.close()
 
 
-def call_external_command_detached(cl, with_log_files=False):
+
+def call_external_command_detached(cl, with_log_files=False, prefix=None):
     """ Executes an external command
 
         :param string cl: Command line to be executed (command + options and parameters)
@@ -49,6 +52,8 @@ def call_external_command_detached(cl, with_log_files=False):
     stderr = sys.stderr
 
     if with_log_files:
+        if prefix:
+            command = '{}_{}'.format(prefix, command)
         stdout = open(command + '.out', 'wa')
         stderr = open(command + '.err', 'wa')
         started = "Started command {} on {}".format(' '.join(cl), datetime.now())
@@ -65,11 +70,11 @@ def call_external_command_detached(cl, with_log_files=False):
             stdout.close()
             stderr.close()
     return p_handle
- 
+
 
 def days_old(date, date_format="%y%m%d"):
-    """ Return the number days between today and given date 
-    
+    """ Return the number days between today and given date
+
         :param string date: date to ckeck with
         :param date_format: the format of given 'date' string
     """
@@ -81,12 +86,12 @@ def days_old(date, date_format="%y%m%d"):
 
 def query_yes_no(question, default="yes", force=False):
     """Ask a yes/no question via raw_input() and return their answer.
-    "question" is a string that is presented to the user. "default" 
-    is the presumed answer if the user just hits <Enter>. It must be 
-    "yes" (the default), "no" or None (meaning an answer is required 
+    "question" is a string that is presented to the user. "default"
+    is the presumed answer if the user just hits <Enter>. It must be
+    "yes" (the default), "no" or None (meaning an answer is required
     of the user). The force option simply sets the answer to default.
     The "answer" return value is one of "yes" or "no".
-    
+
     :param question: the displayed question
     :param default: the default answer
     :param force: set answer to default
