@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 Welcome to TACA's documentation!
-==============================
+================================
 
 This is the documentation for TACA.
 
@@ -12,20 +12,61 @@ TACA stands for Tool for the Automation of Cleanup and Analyses, and basically i
 `National Genomics Infrastructure`_ for easing
 the day-to-day tasks of managing and organizing projects and data.
 
-Contents:
+To install TACA latest stable version, just use: ``pip install taca``, for the latest
+development version, use ``pip install git+git://github.com/SciLifeLab/TACA.git``.
+
+Once it is installed, to get help just use the ``--help`` option. You can use the
+``--help`` option on every TACA subcommand to get specific command help. For example
+``taca --help`` will give you
+
+.. code-block:: bash
+
+    Usage: taca [OPTIONS] COMMAND [ARGS]...
+
+      Tool for the Automation of Storage and Analyses
+
+    Options:
+      --version                   Show the version and exit.
+      -c, --config-file FILENAME  Path to TACA configuration file
+      --help                      Show this message and exit.
+
+    Commands:
+      analysis  Analysis methods entry point
+      storage   Storage management methods and utilities
+
+And ``taca storage --help`` will give you
+
+.. code-block:: bash
+
+    Usage: taca storage [OPTIONS] COMMAND [ARGS]...
+
+      Storage management methods and utilities
+
+    Options:
+      -d, --days INTEGER  Days to consider as thershold
+      -r, --run PATH
+      --help              Show this message and exit.
+
+    Commands:
+      archive  Archive old runs to SWESTORE
+      cleanup  Do appropriate cleanup on the given site i.e.
+
+Code and configuration
+----------------------
 
 .. toctree::
    :maxdepth: 2
 
-   _templates/contribute
-   _templates/scripts/index
+   _templates/intro
+
+API documentation
+-----------------
+
+.. toctree::
+   :maxdepth: 3
+
    _templates/api/modules
 
-
-Indices and tables
-==================
-
-* :ref:`genindex`
 
 .. EXTERNAL LINKS
 
