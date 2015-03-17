@@ -1,4 +1,10 @@
-## TACA - Tool for the Automation of Cleanup and Analyses
+<p align="center">
+  <a href="https://github.com/guillermo-carrasco/TACA">
+    <img width="512" height="175" src="artwork/logo-alternative.png"/>
+  </a>
+</p>
+
+## Tool for the Automation of Cleanup and Analyses
 
 [![PyPI version](https://badge.fury.io/py/taca.svg)](http://badge.fury.io/py/taca)
 [![Build Status](https://travis-ci.org/SciLifeLab/TACA.svg?branch=master)](https://travis-ci.org/SciLifeLab/TACA)
