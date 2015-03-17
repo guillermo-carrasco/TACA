@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://github.com/guillermo-carrasco/TACA">
+  <a href="https://github.com/SciLifeLab/TACA">
     <img width="512" height="175" src="artwork/logo-alternative.png"/>
   </a>
 </p>
