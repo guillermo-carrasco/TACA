@@ -3,10 +3,13 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to TACA's documentation!
-================================
+.. image:: _static/logo-alternative.png
+    :width: 512
+    :height: 175
+    :align: center
+    :alt: TACA logo
 
-This is the documentation for TACA.
+|
 
 TACA stands for Tool for the Automation of Cleanup and Analyses, and basically it is a set of tools used in the
 `National Genomics Infrastructure`_ for easing
