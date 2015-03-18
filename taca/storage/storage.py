@@ -18,7 +18,7 @@ from statusdb.db import connections as statusdb
 def cleanup_nas(days):
     """Will move the finished runs in NASes and processing server
     to nosync directory, so they will not be processed anymore
-    
+
     :param int days: number fo days to check threshold
     """
     config = get_config()
@@ -132,27 +132,12 @@ def cleanup_uppmax(site, days, dry_run=False):
         runs = [ r for r in os.listdir(root_dir) if re.match(filesystem.RUN_RE,r) ]
         with filesystem.chdir(root_dir):
             for run in runs:
-                fcid = run.split('_')[3]
-                ## Mi-seq have different fcid format, take accordingly
-                fcid = fcid if re.search('-',fcid) else fcid[1:]
-                ## fetch and prarse samplesheet to get projects ##
-                try:
-                    ssheet = [c for c in os.listdir(run) if re.search('{}.csv|SampleSheet.csv'.format(fcid),c)][0]
-                except IndexError:
-                    LOG.warn("Could not find expected samplesheet for run {}, so SKIPPING..".format(run))
-                    continue
-                with open(os.path.join(run,ssheet),'r') as ss:
-                    try:
-                        run_projs = list(set([ d['SampleProject'].replace('__','.') for d in csv.DictReader(ss) ]))
-                    except:
-                        LOG.warn("Samplesheet is not in expected format for run {}".format(run))
-                        continue
-                ## check if all projects of the run have been closed and if it exists in swestore##
-                if len(run_projs) == len(get_closed_projects(run_projs, pcon, days)) and run in archived_in_swestore:
-                    list_to_delete.append(run)
-                else:
-                    LOG.warn("All projects that were ran on {} are not closed, so SKIPPING".format(run))
-                    continue
+                fc_date = run.split('_')[0]
+                if misc.days_old(fc_date) > days:
+                    if run in archived_in_swestore:
+                        list_to_delete.append(run)
+                    else:
+                        LOG.warn("Run {} is older than {} days but not in swestore, so SKIPPING".format(run, days))
 
     ## delete and log
     for item in list_to_delete:
@@ -251,7 +236,7 @@ def check_days(site, days, config):
     """Check if 'days' given while running command. If not take the default threshold
     from config file (which should exist). Also when 'days' given on the command line
     raise a check to make sure it was really meant to do so
-    
+
     :param str site: site to be cleaned and relevent date to pick
     :param int days: number of days to check, will be None if '-d' not used
     :param dict config: config file parsed and saved as dictionary
