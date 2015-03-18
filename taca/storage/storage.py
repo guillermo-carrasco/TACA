@@ -60,7 +60,7 @@ def archive_to_swestore(days, run=None):
                     "the absolute path or relative path being in the correct directory.".format(run)))
             else:
                 with filesystem.chdir(base_dir):
-                    _archive_run(run, days)
+                    _archive_run((run, days))
         else:
             LOG.error("The name {} doesn't look like an Illumina run".format(os.path.basename(run)))
     # Otherwise find all runs in every data dir on the nosync partition
