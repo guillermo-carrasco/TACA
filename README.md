@@ -12,9 +12,4 @@
 
 This package contains several tools for projects and data management in the [National Genomics Infrastructure](https://portal.scilifelab.se/genomics/) in Stockholm, Sweden.
 
-For a more detailed documentation please go to [the documentation page](http://taca.readthedocs.org/en/latest/)
-
-### Contributors
-
-* [Guillermo Carrasco](https://github.com/guillermo-carrasco)
-* [Francesco Vezzi](https://github.com/vezzi)
+For a more detailed documentation please go to [the documentation page](http://taca.readthedocs.org/en/latest/).
