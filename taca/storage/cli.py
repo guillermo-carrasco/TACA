@@ -5,7 +5,7 @@ from taca.storage import storage as st
 
 
 @click.group()
-@click.option('-d', '--days', default=10, help="Days to consider as thershold")
+@click.option('-d', '--days', type=click.INT, help="Days to consider as thershold")
 @click.option('-r', '--run', type=click.Path(exists=True))
 @click.pass_context
 def storage(ctx, days, run):

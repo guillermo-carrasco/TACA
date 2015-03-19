@@ -45,6 +45,8 @@ def cleanup_processing(days):
     config = get_config()
     LOG = get_logger()
     transfer_file = os.path.join(config.get('preprocessing', {}).get('status_dir'), 'transfer.tsv')
+    if not days:
+        days = config.get('cleanup', {}).get('processing-server', {}).get('days', 10)
     try:
         #Move finished runs to nosync
         for data_dir in config.get('storage').get('data_dirs'):
