@@ -54,3 +54,16 @@ def list_runs_in_swestore(path, pattern=RUN_RE, no_ext=False):
         return runs
     except CalledProcessError:
         return []
+
+
+def is_in_file(file_path, text):
+    """ Looks for text appearing in a file.
+
+    :param str file_path: Path to the source file
+    :param str text: Text to find in the file
+    :raises OSError: If the file does not exist
+    :returns bool: True is text is in file, False otherwise
+    """
+    with open(file_path, 'r') as f:
+        content = f.read()
+    return text in content

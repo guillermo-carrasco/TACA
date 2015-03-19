@@ -38,7 +38,7 @@ def cleanup(ctx, site, dry_run):
     if site == 'nas':
         st.cleanup_nas(days)
     if site == 'processing-server':
-        raise NotImplementedError('Method for this site is not implemented yet')
+        st.cleanup_processing(days)
     if site == 'swestore':
         st.cleanup_swestore(days, dry_run)
     if site in ['illumina','analysis','archive']:
