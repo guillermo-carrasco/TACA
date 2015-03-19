@@ -37,11 +37,12 @@ def cleanup_nas(days):
                         LOG.info('RTAComplete.txt file exists but is not older than {} day(s), skipping run {}'.format(str(days), run))
 
 
-def archive_to_swestore(days, run=None):
+def archive_to_swestore(days, run=None, cores=None):
     """Send runs (as archives) in NAS nosync to swestore for backup
 
     :param int days: number fo days to check threshold
     :param str run: specific run to send swestore
+    :param int cores: number of cores to be used for pooling
     """
     config = get_config()
     LOG = get_logger()
@@ -72,7 +73,7 @@ def archive_to_swestore(days, run=None):
                 to_be_archived = [r for r in os.listdir(to_send_dir) if re.match(filesystem.RUN_RE, r)
                                             and not os.path.exists("{}.archiving".format(r.split('.')[0]))]
                 if to_be_archived:
-                    pool = Pool(processes=len(to_be_archived))
+                    pool = Pool(processes=len(to_be_archived) if not cores else cores)
                     pool.map_async(_archive_run, ((run, days) for run in to_be_archived))
                     pool.close()
                     pool.join()

@@ -16,13 +16,14 @@ def storage(ctx, days, run):
 @storage.command()
 @click.option('--backend', type=click.Choice(['swestore']), required=True,
               help='Long term storage backend')
+@click.option('-c','--cores', type=click.INT, help='Limit the number of cores used simultaneously')
 @click.pass_context
-def archive(ctx, backend):
+def archive(ctx, backend, cores):
     """ Archive old runs to SWESTORE
 	"""
     params = ctx.parent.params
     if backend == 'swestore':
-        st.archive_to_swestore(days=params.get('days'), run=params.get('run'))
+        st.archive_to_swestore(days=params.get('days'), run=params.get('run'), cores)
 
 
 @storage.command()
