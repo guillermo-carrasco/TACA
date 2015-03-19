@@ -1,10 +1,30 @@
 """ Miscellaneous or general-use methods
 """
 import os
+import smtplib
 import subprocess
 import sys
 
 from datetime import datetime
+from email.mime.text import MIMEText
+
+
+def send_mail(subject, content, receiver):
+    """ Sends an email
+
+    :param str subject: Subject for the email
+    :param str content: Content of the email
+    :param str receiver: Address to send the email
+    """
+    msg = MIMEText(content)
+    msg['Subject'] = "TACA - {}".format(subject)
+    msg['From'] = 'TACA'
+    msg['to'] = receiver
+
+    s = smtplib.SMTP('localhost')
+    s.sendmail('TACA', [receiver], msg.as_string())
+    s.quit()
+
 
 def call_external_command(cl, with_log_files=False, prefix=None):
     """ Executes an external command
@@ -36,7 +56,6 @@ def call_external_command(cl, with_log_files=False, prefix=None):
         if with_log_files:
             stdout.close()
             stderr.close()
-
 
 
 def call_external_command_detached(cl, with_log_files=False, prefix=None):
@@ -83,6 +102,7 @@ def days_old(date, date_format="%y%m%d"):
     except ValueError:
         return None
     return time_dif.days
+
 
 def query_yes_no(question, default="yes", force=False):
     """Ask a yes/no question via raw_input() and return their answer.

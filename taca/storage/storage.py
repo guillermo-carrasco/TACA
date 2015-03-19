@@ -1,5 +1,6 @@
 """Storage methods and utilities"""
 
+import getpass
 import os
 import re
 import csv
@@ -16,10 +17,9 @@ from statusdb.db import connections as statusdb
 
 
 def cleanup_nas(days):
-    """Will move the finished runs in NASes and processing server
-    to nosync directory, so they will not be processed anymore
+    """Will move the finished runs in NASes to nosync directory.
 
-    :param int days: number fo days to check threshold
+    :param int days: Number of days to consider a run to be old
     """
     config = get_config()
     LOG = get_logger()
@@ -35,6 +35,51 @@ def cleanup_nas(days):
                         shutil.move(run, 'nosync')
                     else:
                         LOG.info('RTAComplete.txt file exists but is not older than {} day(s), skipping run {}'.format(str(days), run))
+
+
+def cleanup_processing(days):
+    """Cleanup runs in processing server.
+
+    :param int days: Number of days to consider a run to be old
+    """
+    config = get_config()
+    LOG = get_logger()
+    transfer_file = os.path.join(config.get('preprocessing', {}).get('status_dir'), 'transfer.tsv')
+    try:
+        #Move finished runs to nosync
+        for data_dir in config.get('storage').get('data_dirs'):
+            LOG.info('Moving old runs in {}'.format(data_dir))
+            with filesystem.chdir(data_dir):
+                for run in [r for r in os.listdir(data_dir) if re.match(filesystem.RUN_RE, r)]:
+                    if filesystem.is_in_file(transfer_file, run):
+                        LOG.info('Moving run {} to nosync directory'.format(os.path.basename(run)))
+                        shutil.move(run, 'nosync')
+                    else:
+                        LOG.info(("Run {} has not been transferred to the analysis "
+                            "server yet, not archiving".format(run)))
+        #Remove old runs from archiving dirs
+        for archive_dir in config.get('storage').get('archive_dirs'):
+            LOG.info('Removing old runs in {}'.format(archive_dir))
+            with filesystem.chdir(archive_dir):
+                for run in [r for r in os.listdir(archive_dir) if re.match(filesystem.RUN_RE, r)]:
+                    rta_file = os.path.join(run, 'RTAComplete.txt')
+                    if os.path.exists(rta_file):
+                        # 1 day == 60*60*24 seconds --> 86400
+                        if os.stat(rta_file).st_mtime < time.time() - (86400 * days):
+                            LOG.info('Removing run {} to nosync directory'.format(os.path.basename(run)))
+                            shutil.rmtree(run)
+                        else:
+                            LOG.info('RTAComplete.txt file exists but is not older than {} day(s), skipping run {}'.format(str(days), run))
+
+    except IOError:
+        sbj = "Cannot archive old runs in processing server"
+        msg = ("Could not find transfer.tsv file, so I cannot decide if I should "
+               "archive any run or not.")
+        cnt = config.get('contact', None)
+        if not cnt:
+            cnt = "{}@localhost".format(getpass.getuser())
+        LOG.error(msg)
+        misc.send_mail(sbj, msg, cnt)
 
 
 def archive_to_swestore(days, run=None, max_runs=None):

@@ -5,7 +5,7 @@ from taca.storage import storage as st
 
 
 @click.group()
-@click.option('-d', '--days', type=click.INT, help="Days to consider as thershold")
+@click.option('-d', '--days', default=10, help="Days to consider as thershold")
 @click.option('-r', '--run', type=click.Path(exists=True))
 @click.pass_context
 def storage(ctx, days, run):
@@ -16,14 +16,13 @@ def storage(ctx, days, run):
 @storage.command()
 @click.option('--backend', type=click.Choice(['swestore']), required=True,
               help='Long term storage backend')
-@click.option('-m','--max-runs', type=click.INT, help='Limit the number of runs to be archived simultaneously')
 @click.pass_context
-def archive(ctx, backend, max_runs):
+def archive(ctx, backend):
     """ Archive old runs to SWESTORE
 	"""
     params = ctx.parent.params
     if backend == 'swestore':
-        st.archive_to_swestore(days=params.get('days'), run=params.get('run'), max_runs)
+        st.archive_to_swestore(days=params.get('days'), run=params.get('run'))
 
 
 @storage.command()
@@ -38,7 +37,7 @@ def cleanup(ctx, site, dry_run):
     if site == 'nas':
         st.cleanup_nas(days)
     if site == 'processing-server':
-        raise NotImplementedError('Method for this site is not implemented yet')
+        st.cleanup_processing(days)
     if site == 'swestore':
         st.cleanup_swestore(days, dry_run)
     if site in ['illumina','analysis','archive']:
