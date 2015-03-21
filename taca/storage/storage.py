@@ -1,19 +1,19 @@
 """Storage methods and utilities"""
 
+import csv
 import getpass
 import os
 import re
-import csv
-import time
 import shutil
+import time
 
 from datetime import datetime
 from multiprocessing import Pool
 
-from taca.log import get_logger
-from taca.utils.config import get_config
-from taca.utils import filesystem, misc
 from statusdb.db import connections as statusdb
+from taca.log import LOG
+from taca.utils.config import CONFIG
+from taca.utils import filesystem, misc
 
 
 def cleanup_nas(days):
@@ -21,9 +21,7 @@ def cleanup_nas(days):
 
     :param int days: Number of days to consider a run to be old
     """
-    config = get_config()
-    LOG = get_logger()
-    for data_dir in config.get('storage').get('data_dirs'):
+    for data_dir in CONFIG.get('storage').get('data_dirs'):
         LOG.info('Moving old runs in {}'.format(data_dir))
         with filesystem.chdir(data_dir):
             for run in [r for r in os.listdir(data_dir) if re.match(filesystem.RUN_RE, r)]:
@@ -42,14 +40,12 @@ def cleanup_processing(days):
 
     :param int days: Number of days to consider a run to be old
     """
-    config = get_config()
-    LOG = get_logger()
-    transfer_file = os.path.join(config.get('preprocessing', {}).get('status_dir'), 'transfer.tsv')
+    transfer_file = os.path.join(CONFIG.get('preprocessing', {}).get('status_dir'), 'transfer.tsv')
     if not days:
-        days = config.get('cleanup', {}).get('processing-server', {}).get('days', 10)
+        days = CONFIG.get('cleanup', {}).get('processing-server', {}).get('days', 10)
     try:
         #Move finished runs to nosync
-        for data_dir in config.get('storage').get('data_dirs'):
+        for data_dir in CONFIG.get('storage').get('data_dirs'):
             LOG.info('Moving old runs in {}'.format(data_dir))
             with filesystem.chdir(data_dir):
                 for run in [r for r in os.listdir(data_dir) if re.match(filesystem.RUN_RE, r)]:
@@ -60,7 +56,7 @@ def cleanup_processing(days):
                         LOG.info(("Run {} has not been transferred to the analysis "
                             "server yet, not archiving".format(run)))
         #Remove old runs from archiving dirs
-        for archive_dir in config.get('storage').get('archive_dirs'):
+        for archive_dir in CONFIG.get('storage').get('archive_dirs'):
             LOG.info('Removing old runs in {}'.format(archive_dir))
             with filesystem.chdir(archive_dir):
                 for run in [r for r in os.listdir(archive_dir) if re.match(filesystem.RUN_RE, r)]:
@@ -77,7 +73,7 @@ def cleanup_processing(days):
         sbj = "Cannot archive old runs in processing server"
         msg = ("Could not find transfer.tsv file, so I cannot decide if I should "
                "archive any run or not.")
-        cnt = config.get('contact', None)
+        cnt = CONFIG.get('contact', None)
         if not cnt:
             cnt = "{}@localhost".format(getpass.getuser())
         LOG.error(msg)
@@ -91,8 +87,6 @@ def archive_to_swestore(days, run=None, max_runs=None):
     :param str run: specific run to send swestore
     :param int max_runs: number of runs to be processed simultaneously
     """
-    config = get_config()
-    LOG = get_logger()
     # If the run is specified in the command line, check that exists and archive
     if run:
         run = os.path.basename(run)
@@ -100,7 +94,7 @@ def archive_to_swestore(days, run=None, max_runs=None):
         if re.match(filesystem.RUN_RE, run):
             # If the parameter is not an absolute path, find the run in the archive_dirs
             if not base_dir:
-                for archive_dir in config.get('storage').get('archive_dirs'):
+                for archive_dir in CONFIG.get('storage').get('archive_dirs'):
                     if os.path.exists(os.path.join(archive_dir, run)):
                         base_dir = archive_dir
             if not os.path.exists(os.path.join(base_dir, run)):
@@ -114,7 +108,7 @@ def archive_to_swestore(days, run=None, max_runs=None):
     # Otherwise find all runs in every data dir on the nosync partition
     else:
         LOG.info("Archiving old runs to SWESTORE")
-        for to_send_dir in config.get('storage').get('archive_dirs'):
+        for to_send_dir in CONFIG.get('storage').get('archive_dirs'):
             LOG.info('Checking {} directory'.format(to_send_dir))
             with filesystem.chdir(to_send_dir):
                 to_be_archived = [r for r in os.listdir(to_send_dir) if re.match(filesystem.RUN_RE, r)
@@ -133,12 +127,10 @@ def cleanup_swestore(days, dry_run=False):
 
     :param int days: Threshold days to check and remove
     """
-    config = get_config()
-    LOG = get_logger()
     days = check_days('swestore', days, config)
     if not days:
         return
-    runs = filesystem.list_runs_in_swestore(path=config.get('cleanup').get('swestore').get('root'))
+    runs = filesystem.list_runs_in_swestore(path=CONFIG.get('cleanup').get('swestore').get('root'))
     for run in runs:
         date = run.split('_')[0]
         if misc.days_old(date) > days:
@@ -148,6 +140,7 @@ def cleanup_swestore(days, dry_run=False):
             misc.call_external_command('irm -f {}'.format(run))
             LOG.info('Removed file {} from swestore'.format(run))
 
+
 def cleanup_uppmax(site, days, dry_run=False):
     """Remove project/run that have been closed more than 'days'
     from the given 'site' on uppmax
@@ -155,13 +148,11 @@ def cleanup_uppmax(site, days, dry_run=False):
     :param str site: site where the cleanup should be performed
     :param int days: number of days to check for closed projects
     """
-    config = get_config()
-    LOG = get_logger()
     days = check_days(site, days, config)
     if not days:
         return
-    root_dir = config.get('cleanup').get(site).get('root')
-    deleted_log = config.get('cleanup').get('deleted_log')
+    root_dir = CONFIG.get('cleanup').get(site).get('root')
+    deleted_log = CONFIG.get('cleanup').get('deleted_log')
     assert os.path.exists(os.path.join(root_dir,deleted_log)), "Log directory {} doesn't exist in {}".format(deleted_log,root_dir)
     log_file = os.path.join(root_dir,"{fl}/{fl}.log".format(fl=deleted_log))
 
@@ -176,7 +167,7 @@ def cleanup_uppmax(site, days, dry_run=False):
     else:
         ##work flow for cleaning archive ##
         list_to_delete = []
-        archived_in_swestore = filesystem.list_runs_in_swestore(path=config.get('cleanup').get('swestore').get('root'), no_ext=True)
+        archived_in_swestore = filesystem.list_runs_in_swestore(path=CONFIG.get('cleanup').get('swestore').get('root'), no_ext=True)
         runs = [ r for r in os.listdir(root_dir) if re.match(filesystem.RUN_RE,r) ]
         with filesystem.chdir(root_dir):
             for run in runs:
@@ -210,8 +201,6 @@ def _archive_run((run, days)):
 
     :param str run: Run directory
     """
-    config = get_config()
-    LOG = get_logger()
 
     def _send_to_swestore(f, dest, remove=True):
         """ Send file to swestore checking adler32 on destination and eventually
@@ -236,7 +225,7 @@ def _archive_run((run, days)):
     open("{}.archiving".format(run.split('.')[0]), 'w').close()
     if run.endswith('bz2'):
         if os.stat(run).st_mtime < time.time() - (86400 * days):
-            _send_to_swestore(run, config.get('storage').get('irods').get('irodsHome'))
+            _send_to_swestore(run, CONFIG.get('storage').get('irods').get('irodsHome'))
         else:
             LOG.info("Run {} is not {} days old yet. Not archiving".format(run, str(days)))
     else:
@@ -247,7 +236,7 @@ def _archive_run((run, days)):
             misc.call_external_command('tar --use-compress-program=pbzip2 -cf {run}.tar.bz2 {run}'.format(run=run))
             LOG.info('Run {} successfully compressed! Removing from disk...'.format(run))
             shutil.rmtree(run)
-            _send_to_swestore('{}.tar.bz2'.format(run), config.get('storage').get('irods').get('irodsHome'))
+            _send_to_swestore('{}.tar.bz2'.format(run), CONFIG.get('storage').get('irods').get('irodsHome'))
         else:
             LOG.info("Run {} is not {} days old yet. Not archiving".format(run, str(days)))
     os.remove("{}.archiving".format(run.split('.')[0]))

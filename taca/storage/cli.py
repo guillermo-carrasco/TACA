@@ -23,7 +23,7 @@ def archive(ctx, backend, max_runs):
 	"""
     params = ctx.parent.params
     if backend == 'swestore':
-        st.archive_to_swestore(days=params.get('days'), run=params.get('run'), max_runs)
+        st.archive_to_swestore(days=params.get('days'), run=params.get('run'), max_runs=max_runs)
 
 
 @storage.command()
