@@ -10,9 +10,9 @@ import requests
 from datetime import datetime
 import re
 
-from taca.log import get_logger
+from taca.log import LOG
 from taca.utils.filesystem import chdir
-from taca.utils.config import get_config
+from taca.utils.config import CONFIG
 from taca.utils import parsers, misc
 
 def check_config_options(config):
@@ -92,7 +92,6 @@ def transfer_run(run, config, analysis=True):
     :param dict config: Parsed configuration
     :param bool analysis: Trigger analysis on remote server
     """
-    LOG = get_logger()
     with chdir(run):
         cl = ['rsync', '-av']
         # Add R/W permissions to the group
@@ -138,7 +137,6 @@ def trigger_analysis(run, config):
     :param str run: Run directory
     :param dict config: Parsed configuration
     """
-    LOG = get_logger()
     if not config.get('analysis'):
         LOG.warn(("No configuration found for remote analysis server. Not triggering"
                   "analysis of {}".format(os.path.basename(run))))
@@ -174,7 +172,6 @@ def prepare_sample_sheet(run, config):
         :param dict config: Parset configuration file
 
     """
-    LOG = get_logger()
     #start by checking if samplesheet is in the correct place
     run_name     = os.path.basename(run)
     current_year = '20' + run_name[0:2]
@@ -212,7 +209,6 @@ def samplesheet_massage(samplesheet_dict, samplesheet_name=''):
 
         :param dict FCID_samplesheet_origin_dict: the sample sheet stored in a hash table
     """
-    LOG = get_logger()
     #check that sample sheet is ok
     if not samplesheet_dict["Header"]:
         LOG.warn(("When trying to generate SampleSheet.csv for sample sheet {} I find out that "
@@ -254,7 +250,6 @@ def dict_to_samplesheet(samplesheet_dict, file_dest):
         :param str file_dest: destination file
 
     """
-    LOG = get_logger()
     try:
 
         with open(file_dest, 'wb') as csvfile:
@@ -290,7 +285,6 @@ def samplesheet_to_dict(samplesheet):
 
         :param str samplesheet: the sample sheet to be stored in the hash table
     """
-    LOG = get_logger()
     samplesheet_dict = {}
     try:
         section = ""
@@ -323,7 +317,6 @@ def run_bcl2fastq(run, config):
     :param str run: Run directory
     :param dict config: Parset configuration file
     """
-    LOG = get_logger()
     LOG.info('Building bcl2fastq command')
     with chdir(run):
         cl_options = config['bcl2fastq']
@@ -409,8 +402,7 @@ def run_bcl2fastq(run, config):
 
 def run_demultiplexing(run):
     """ Run demultiplexing in all data directories """
-    config = get_config()['preprocessing']
-    LOG = get_logger()
+    config = CONFIG['preprocessing']
 
     hiseq_runs = glob.glob(os.path.join(config['hiseq_data'], '1*XX')) if not run else [run]
     for run in hiseq_runs:
