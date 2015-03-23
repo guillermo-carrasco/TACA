@@ -63,7 +63,8 @@ def cleanup_processing(days):
                     rta_file = os.path.join(run, 'RTAComplete.txt')
                     if os.path.exists(rta_file):
                         # 1 day == 60*60*24 seconds --> 86400
-                        if os.stat(rta_file).st_mtime < time.time() - (86400 * days):
+                        if os.stat(rta_file).st_mtime < time.time() - (86400 * days) and \
+                                filesystem.is_in_swestore("{}.tar.bz2".format(run)):
                             LOG.info('Removing run {} to nosync directory'.format(os.path.basename(run)))
                             shutil.rmtree(run)
                         else:
