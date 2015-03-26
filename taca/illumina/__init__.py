@@ -105,7 +105,7 @@ def demultiplex_HiSeq(run):
 def demultiplex_MiSeq(run):
     """ Demultiplexing for MiSeq runs
     """
-    raise NotImplementedError('Meec! Demultiplexing for HiSeq (V3/V4) runs not implemented yet :-/')
+    raise NotImplementedError('Meec! Demultiplexing for MiSeq runs not implemented yet :-/')
 
 
 class Run(object):
