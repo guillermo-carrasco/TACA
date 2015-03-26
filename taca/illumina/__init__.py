@@ -2,10 +2,11 @@
 """
 import os
 
+from datetime import datetime
 from xml.etree import ElementTree as ET
 
 from taca.log import LOG
-from scilifelab.utils import misc
+from taca.utils import misc
 from taca.utils.config import CONFIG
 from taca.utils.filesystem import chdir
 
@@ -138,7 +139,7 @@ class Run(object):
         # HiSeq and HiSeq X runParameter.xml files will have a Flowcell child with run type info
         run_type = run_parameters.find('Flowcell')
         # But MiSeqs doesn't...
-        if not run_type:
+        if run_type is None:
             run_type = run_parameters.find('ApplicationName')
 
         try:
@@ -160,13 +161,12 @@ class Run(object):
     @property
     def status(self):
         if self.run_type == 'HiSeq X':
-            def processing_status(run):
-                demux_dir = os.path.join(self.run_dir, 'Demultiplexing')
-                if not os.path.exists(demux_dir):
-                    return 'TO_START'
-                elif os.path.exists(os.path.join(demux_dir, 'Stats', 'DemultiplexingStats.xml')):
-                    return 'COMPLETED'
-                else:
-                    return 'IN_PROGRESS'
+            demux_dir = os.path.join(self.run_dir, 'Demultiplexing')
+            if not os.path.exists(demux_dir):
+                return 'TO_START'
+            elif os.path.exists(os.path.join(demux_dir, 'Stats', 'DemultiplexingStats.xml')):
+                return 'COMPLETED'
+            else:
+                return 'IN_PROGRESS'
         else:
             raise NotImplementedError('Sorry... no status method defined for {} runs'.format(self.run_type))
