@@ -306,7 +306,7 @@ def run_preprocessing(run):
                 LOG.info(("Preprocessing of run {} is finished, check if run has been "
                     "transferred and transfer it otherwise".format(run.id)))
 
-                t_file = os.path.join(config['status_dir'], 'transferun.tsv')
+                t_file = os.path.join(config['status_dir'], 'transfer.tsv')
                 transferred = is_transferred(run, t_file)
                 if not transferred:
                     LOG.info("Run {} hasn't been transferred yet.".format(run.id))
