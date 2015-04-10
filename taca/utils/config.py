@@ -43,8 +43,3 @@ def load_yaml_config(config_file):
         except IOError as e:
             e.message = "Could not open configuration file \"{}\".".format(config_file)
             raise e
-
-
-def get_config():
-    """ Returns global configuration """
-    return CONFIG

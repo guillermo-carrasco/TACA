@@ -16,13 +16,14 @@ def storage(ctx, days, run):
 @storage.command()
 @click.option('--backend', type=click.Choice(['swestore']), required=True,
               help='Long term storage backend')
+@click.option('-m','--max-runs', type=click.INT, help='Limit the number of runs to be archived simultaneously')
 @click.pass_context
-def archive(ctx, backend):
+def archive(ctx, backend, max_runs):
     """ Archive old runs to SWESTORE
 	"""
     params = ctx.parent.params
     if backend == 'swestore':
-        st.archive_to_swestore(days=params.get('days'), run=params.get('run'))
+        st.archive_to_swestore(days=params.get('days'), run=params.get('run'), max_runs=max_runs)
 
 
 @storage.command()
@@ -37,7 +38,7 @@ def cleanup(ctx, site, dry_run):
     if site == 'nas':
         st.cleanup_nas(days)
     if site == 'processing-server':
-        raise NotImplementedError('Method for this site is not implemented yet')
+        st.cleanup_processing(days)
     if site == 'swestore':
         st.cleanup_swestore(days, dry_run)
     if site in ['illumina','analysis','archive']:
