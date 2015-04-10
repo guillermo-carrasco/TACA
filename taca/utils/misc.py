@@ -107,14 +107,14 @@ def hashfile(afile, hasher='sha1', blocksize=65536):
     """ Calculate the hash digest of a file with the specified algorithm and 
         return it.
         
-        This solution was borrowed from http://stackoverflow.com/a/3431835
+        This solution was adapted from http://stackoverflow.com/a/3431835
     
-        :param afile: the file to calculate the digest for
-        :param hasher: the hashing algorithm to be used, default is sha1
-        :param int blocksize: the blocksize to use for reading the file
-        :returns: the hash digest as returned by hashlib.digest()
+        :param string afile: the file to calculate the digest for
+        :param string hasher: the hashing algorithm to be used, default is sha1
+        :param int blocksize: the blocksize to use, default is 65536 bytes
+        :returns: the hexadecimal hash digest or None if input was not a file
     """ 
-    if not os.path.isfile(afile) or hasher is None:
+    if not os.path.isfile(afile):
         return None
     hashobj = hashlib.new(hasher)
     with open(afile,'rb') as fh:
