@@ -1,9 +1,9 @@
 import os
 import shutil
 import subprocess
-from taca.log import get_logger
+from taca.log import LOG
 from taca.utils.filesystem import create_folder
-from taca.utils.misc import hashfile
+from taca.utils.misc import hashfile, call_external_command
 
 class TransferAgent(object):
     
@@ -15,7 +15,7 @@ class TransferAgent(object):
         **kwargs):
         self.src_path = src_path
         self.dest_path = dest_path
-        self.log = kwargs.get('log',get_logger())
+        self.log = kwargs.get('log',LOG)
         self.cmdopts = opts
 
     def __str__(self):
@@ -48,9 +48,6 @@ class TransferAgent(object):
         raise NotImplementedError("This method should be implemented by "\
         "subclass")
     
-    def wlog(self,logf,msg):
-        logf("{}: {}".format(str(self),msg))
-    
 class RsyncAgent(TransferAgent):
     
     CMD = "rsync"
@@ -81,20 +78,19 @@ class RsyncAgent(TransferAgent):
     def do_transfer(self,transfer_log=None):
         self.validate_src_path()
         self.validate_dest_path()
-        cmdopts = ["{}{}".format(
-            k,
-            "={}".format(v) if v is not None else "") \
-            for k,v in self.cmdopts.items()]
+        cmdopts = []
+        for param,val in self.cmdopts.items():
+            if val is None:
+                cmdopts.append(param)
+            else:
+                if type(val) == str:
+                    val = [val]
+                for v in val:
+                    cmdopts.append("{}={}".format(param,v))
         command = [self.CMD] + cmdopts + [self.src_path,self.remote_path()]
         try:
-            returncode = subprocess.check_call(
-                command,
-                stderr=subprocess.STDOUT,
-                stdout=transfer_log or subprocess.PIPE)
-            self.wlog(
-                self.log.info,
-                "successfully executed '{}' (exit value {})".
-                format(" ".join(command),returncode))
+            call_external_command(
+                command,with_log_files=True,prefix=transfer_log)
         except subprocess.CalledProcessError as e:
             raise RsyncError(e)
         return (not self.validate) or self.validate_transfer()
@@ -160,15 +156,13 @@ class SymlinkAgent(TransferAgent):
                 # If the existing target is a symlink that points to the 
                 # source, we're all good
                 if self.validate_transfer():
-                    self.wlog(
-                        self.log.debug,
+                    self.log.debug(
                         "target exists and points to the correct "\
                         "source path: '{}'".format(self.src_path))
                     return True
                 # If we are not overwriting, return False
                 if not self.overwrite:
-                    self.wlog(
-                        self.log.debug,
+                    self.log.debug(
                         "target '{}' exists and will not be "\
                         "overwritten".format(self.dest_path))
                     return False
@@ -178,16 +172,14 @@ class SymlinkAgent(TransferAgent):
                 # If the target is a link or a file, we remove it
                 if os.path.islink(self.dest_path) or \
                     os.path.isfile(self.dest_path):
-                    self.wlog(
-                        self.log.debug,
+                    self.log.debug(
                         "removing existing target file '{}'".format(
                             self.dest_path))
                     os.unlink(self.dest_path)
                 # If the target is a directory, we remove it and
                 # everything underneath
                 elif os.path.isdir(self.dest_path):
-                    self.wlog(
-                        self.log.debug,
+                    self.log.debug(
                         "removing existing target folder "\
                         "'{}'".format(self.dest_path))
                     shutil.rmtree(self.dest_path)

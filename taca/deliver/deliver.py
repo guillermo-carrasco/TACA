@@ -6,8 +6,8 @@ import os
 import re
 from ngi_pipeline.database import classes as db
 from ngi_pipeline.utils.classes import memoized
-from taca.log import get_logger
-from taca.utils.config import get_config
+from taca.log import LOG
+from taca.utils.config import CONFIG
 from taca.utils.filesystem import create_folder
 from taca.utils.misc import hashfile
 from taca.utils import transfer
@@ -20,9 +20,9 @@ class DelivererRsyncError(DelivererError): pass
 class Deliverer(object):
     
     def __init__(self, projectid, sampleid, **kwargs):
-        self.config = get_config().get('deliver',{})
+        self.config = CONFIG.get('deliver',{})
         self.config.update(kwargs)
-        self.log = get_logger()
+        self.log = LOG
         self.hasher = kwargs.get('hash_algorithm','sha1')
         for k,v in self.config.items():
             setattr(self,k,v)
@@ -146,8 +146,7 @@ class Deliverer(object):
         return self.expand_path(
             os.path.join(
                 self.stagingpath,
-                "{}_{}.rsync".format(
-                    self.sampleid,
+                "{}_{}".format(self.sampleid,
                     datetime.datetime.now().strftime("%Y%m%dT%H%M%S"))))
                 
     @memoized
@@ -243,12 +242,11 @@ class SampleDeliverer(ProjectDeliverer):
                 '--perms': None,
                 '--chmod': 'o+rwX,ug-rwx',
                 '--verbose': None,
-                '--exclude': "*.{}".format(self.transfer_log().split('.')[-1])
+                '--exclude': ["*rsync.out","*rsync.err"]
             })
-        with open(self.transfer_log(),'w') as lh:
-            try:
-                return agent.do_transfer(transfer_log=lh)
-            except transfer.TransferError as e:
-                raise DelivererRsyncError(e)
+        try:
+            return agent.do_transfer(transfer_log=self.transfer_log())
+        except transfer.TransferError as e:
+            raise DelivererRsyncError(e)
     
             

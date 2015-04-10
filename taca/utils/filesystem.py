@@ -30,12 +30,11 @@ def create_folder(target_folder):
         :returns: True if the folder exists or was created, False if the folder
         does not exists and could not be created
     """
-    if not os.path.exists(target_folder):
-        try:
-            os.makedirs(target_folder)
-        except OSError as e:
-            return False
-    return True
+    try:
+        os.makedirs(target_folder)
+    except OSError as e:
+        pass
+    return os.path.exists(target_folder)
 
 def is_in_swestore(f):
     """ Checks if a file exists in Swestore
