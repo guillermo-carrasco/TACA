@@ -1,5 +1,6 @@
 """ Miscellaneous or general-use methods
 """
+import hashlib
 import os
 import subprocess
 import sys
@@ -71,7 +72,6 @@ def call_external_command_detached(cl, with_log_files=False, prefix=None):
             stderr.close()
     return p_handle
 
-
 def days_old(date, date_format="%y%m%d"):
     """ Return the number days between today and given date
 
@@ -83,6 +83,27 @@ def days_old(date, date_format="%y%m%d"):
     except ValueError:
         return None
     return time_dif.days
+
+def hashfile(afile, hasher='sha1', blocksize=65536):
+    """ Calculate the hash digest of a file with the specified algorithm and 
+        return it.
+        
+        This solution was borrowed from http://stackoverflow.com/a/3431835
+    
+        :param afile: the file to calculate the digest for
+        :param hasher: the hashing algorithm to be used, default is sha1
+        :param int blocksize: the blocksize to use for reading the file
+        :returns: the hash digest as returned by hashlib.digest()
+    """ 
+    if not os.path.isfile(afile) or hasher is None:
+        return None
+    hashobj = hashlib.new(hasher)
+    with open(afile,'rb') as fh:
+        buf = fh.read(blocksize)
+        while len(buf) > 0:
+            hashobj.update(buf)
+            buf = fh.read(blocksize)
+    return hashobj.hexdigest()
 
 def query_yes_no(question, default="yes", force=False):
     """Ask a yes/no question via raw_input() and return their answer.
