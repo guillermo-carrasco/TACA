@@ -59,7 +59,7 @@ class Deliverer(object):
                 if the project alias could not be fetched
         """
         try:
-            return self.project_entry(self.projectid)['projectid']
+            return self.project_entry()['projectid']
         except KeyError:
             raise DelivererDatabaseError(
                 "the project alias for project '{}' could not be fetched "\
@@ -83,6 +83,16 @@ class Deliverer(object):
             self.dbcon().project_get,self.projectid)
 
     @memoized
+    def project_sample_entries(self):
+        """ Fetch the database sample entries representing the instance's project
+            :returns: a list of json-formatted database sample entries
+            :raises DelivererDatabaseError: 
+                if an error occurred when communicating with the database
+        """
+        return self.wrap_database_query(
+            self.dbcon().project_get_samples,self.projectid)
+
+    @memoized
     def sample_entry(self):
         """ Fetch a database entry representing the instance's project and sample
             :returns: a json-formatted database entry
@@ -92,18 +102,24 @@ class Deliverer(object):
         return self.wrap_database_query(
             self.dbcon().sample_get,self.projectid,self.sampleid)
 
-    def update_sample_delivery(self, status="DELIVERED"):
+    def update_delivery_status(self, status="DELIVERED"):
         """ Update the delivery_status field in the database to the supplied 
             status for the project and sample specified by this instance
             :returns: the result from the underlying api call
             :raises DelivererDatabaseError: 
                 if an error occurred when communicating with the database
         """
+        update_fn = self.dbcon().sample_update \
+            if self.sampleid is not None \
+            else self.dbcon().project_update
+        args = [self.projectid]
+        if self.sampleid is not None:
+            args.append(self.sampleid)
+        kwargs = {'delivery_status': status}
         return self.wrap_database_query(
-            self.dbcon().sample_update,
-            self.projectid,
-            self.sampleid,
-            delivery_status=status)
+            update_fn,
+            *args,
+            **kwargs)
             
     def wrap_database_query(self,query_fn,*query_args,**query_kwargs):
         """ Wrapper calling the supplied method with the supplied arguments
@@ -152,7 +168,7 @@ class Deliverer(object):
                     yield (f, 
                         os.path.join(self.expand_path(dfile),os.path.basename(f)), 
                         hashfile(f,hasher=self.hash_algorithm) \
-                        if not self.no_checksum else None))
+                        if not self.no_checksum else None)
     
     def stage_delivery(self):
         """ Stage a delivery by symlinking source paths to destination paths 
@@ -211,7 +227,7 @@ class Deliverer(object):
         return self.expand_path(
             os.path.join(
                 self.stagingpath,
-                "{}.{}".format(self.sampleid,self.hasher)))
+                "{}.{}".format(self.sampleid,self.hash_algorithm)))
 
     def transfer_log(self):
         """
@@ -268,13 +284,36 @@ class ProjectDeliverer(Deliverer):
             projectid,
             sampleid,
             **kwargs)
+    
+    def deliver_project(self):
+        """ Deliver all samples in a project to the destination specified by 
+            deliverypath
             
-    def deliver_project(self, destination_folder=None):
-        """ Deliver a project to the destination
+            :returns: True if all samples were delivered successfully, False if
+                any sample was not properly delivered or ready to be delivered
         """
         self.log.info(
-            "Delivering {} to {}".format(str(self),destination_folder))
-        return True
+            "Delivering {} to {}".format(str(self),self.deliverypath))
+        try:
+            sampleentries = self.project_sample_entries()
+        except DelivererDatabaseError as e:
+            self.log.error(
+                "error '{}' occurred during delivery of {}".format(
+                    str(e),str(self)))
+            raise
+        # right now, don't catch any errors since we're assuming any thrown 
+        # errors needs to be handled by manual intervention
+        status = True
+        print(", ".join([s.get('sampleid') for s in sampleentries.get('samples')]))
+        for sampleentry in sampleentries.get('samples',[]):
+            st = SampleDeliverer(
+                self.projectid,sampleentry.get('sampleid')
+            ).deliver_sample(sampleentry)
+            status = (status and st)
+            
+        if status:
+            self.update_delivery_status()
+        return status
 
 class SampleDeliverer(Deliverer):
     """
@@ -286,11 +325,12 @@ class SampleDeliverer(Deliverer):
             sampleid,
             **kwargs)
         
-    def deliver_sample(self):
+    def deliver_sample(self, sampleentry=None):
         """ Deliver a sample to the destination specified by the config.
             Will check if the sample has already been delivered and should not 
             be delivered again or if the sample is not yet ready to be delivered.
             
+            :params sampleentry: a database sample entry to use for delivery
             :returns: True if sample was successfully delivered or was previously 
                 delivered, False if sample was not yet ready to be delivered
             :raises DelivererDatabaseError: if an entry corresponding to this
@@ -302,7 +342,7 @@ class SampleDeliverer(Deliverer):
         self.log.info(
             "Delivering {} to {}".format(str(self),self.deliverypath))
         try:
-            sampleentry = self.sample_entry(self.projectid,self.sampleid)
+            sampleentry = sampleentry or self.sample_entry()
         except DelivererDatabaseError as e:
             self.log.error(
                 "error '{}' occurred during delivery of {}".format(
@@ -311,12 +351,12 @@ class SampleDeliverer(Deliverer):
         if sampleentry.get('delivery_status') == 'DELIVERED':
             if self.redeliver():
                 self.log.error(
-                    "{}:{} has previously been delivered and this delivery "\
+                    "{} has previously been delivered and this delivery "\
                     "will not be overwritten".format(str(self)))
                 raise DelivererReplaceError(
                     "a previous delivery has been made and should be replaced")
             self.log.info(
-                "{}:{} has already been delivered".format(str(self)))
+                "{} has already been delivered".format(str(self)))
             return True
         elif not sampleentry.get('analysis_status') == 'ANALYZED':
             self.log.info("{} has not finished analysis and will not be "\
@@ -328,6 +368,7 @@ class SampleDeliverer(Deliverer):
             if not self.do_delivery():
                 raise DelivererError("sample was not properly delivered")
             self.log.info("{} successfully delivered".format(str(self)))
+            self.update_delivery_status()
             return True
     
     def do_delivery(self):
@@ -347,8 +388,8 @@ class SampleDeliverer(Deliverer):
             opts={
                 '--copy-links': None,
                 '--recursive': None,
-                '--perms': None,
-                '--chmod': 'o+rwX,ug-rwx',
+#                '--perms': None,
+#                '--chmod': 'o+rwX,ug-rwx',
                 '--verbose': None,
                 '--exclude': ["*rsync.out","*rsync.err"]
             })
