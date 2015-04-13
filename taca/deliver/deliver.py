@@ -44,26 +44,17 @@ class Deliverer(object):
             self,'hash_algorithm','sha1')
         self.no_checksum = getattr(
             self,'no_checksum',False)
-        self.projectalias = getattr(
-            self,'projectalias',self.fetch_projectalias())
+        # only set an attribute for uppnexid if it's actually given or in the db
+        try:
+            self.uppnexid = getattr(
+                self,'uppnexid',self.project_entry()['uppnex_id'])
+        except KeyError:
+            pass
 
     def __str__(self):
         return "{}:{}".format(
             self.projectid,self.sampleid) \
             if self.sampleid is not None else self.projectid
-
-    def fetch_projectalias(self):
-        """ Fetch an alias for the project from the database
-            :returns: the project alias as a string
-            :raises DelivererDatabaseError: 
-                if the project alias could not be fetched
-        """
-        try:
-            return self.project_entry()['projectid']
-        except KeyError:
-            raise DelivererDatabaseError(
-                "the project alias for project '{}' could not be fetched "\
-                "from database".format(self.projectid))
 
     @memoized
     def dbcon(self):
@@ -133,8 +124,6 @@ class Deliverer(object):
             return query_fn(*query_args,**query_kwargs)
         except db.CharonError as ce:
             raise DelivererDatabaseError(ce.message)
-        except Exception:
-            return {'projectid': 'hepp'}
             
     def gather_files(self):
         """ This method will locate files matching the patterns specified in 
@@ -216,9 +205,6 @@ class Deliverer(object):
                 self.deliverypath,
                 self.projectid,
                 os.path.basename(self.staging_digestfile())))
-
-    def redeliver(self):
-        return False
 
     def staging_digestfile(self):
         """
@@ -331,6 +317,7 @@ class SampleDeliverer(Deliverer):
             be delivered again or if the sample is not yet ready to be delivered.
             
             :params sampleentry: a database sample entry to use for delivery
+                but not sent to the receiver
             :returns: True if sample was successfully delivered or was previously 
                 delivered, False if sample was not yet ready to be delivered
             :raises DelivererDatabaseError: if an entry corresponding to this
@@ -349,35 +336,32 @@ class SampleDeliverer(Deliverer):
                     str(e),str(self)))
             raise
         if sampleentry.get('delivery_status') == 'DELIVERED':
-            if self.redeliver():
-                self.log.error(
-                    "{} has previously been delivered and this delivery "\
-                    "will not be overwritten".format(str(self)))
-                raise DelivererReplaceError(
-                    "a previous delivery has been made and should be replaced")
             self.log.info(
                 "{} has already been delivered".format(str(self)))
             return True
-        elif not sampleentry.get('analysis_status') == 'ANALYZED':
+        elif sampleentry.get('analysis_status') != 'ANALYZED':
             self.log.info("{} has not finished analysis and will not be "\
                 "delivered".format(str(self)))
             return False
         else:
             # Propagate raised errors upwards, they should trigger 
             # notification to operator
-            if not self.do_delivery():
-                raise DelivererError("sample was not properly delivered")
-            self.log.info("{} successfully delivered".format(str(self)))
-            self.update_delivery_status()
+            if not self.stage_delivery():
+                raise DelivererError("sample was not properly staged")
+            self.log.info("{} successfully staged".format(str(self)))
+            if not self.stage_only:
+                if not self.do_delivery():
+                    raise DelivererError("sample was not properly delivered")
+                self.log.info("{} successfully delivered".format(str(self)))
+                self.update_delivery_status()
             return True
     
     def do_delivery(self):
-        """ Stage the delivery and deliver the staged folder using rsync
+        """ Deliver the staged delivery folder using rsync
             :returns: True if delivery was successful, False if unsuccessful
-            :raises DelivererRsyncError: if an eexception occurred during
+            :raises DelivererRsyncError: if an exception occurred during
                 transfer
         """
-        self.stage_delivery()
         agent = transfer.RsyncAgent(
             self.expand_path(self.stagingpath),
             dest_path=self.expand_path(self.deliverypath),
@@ -388,8 +372,8 @@ class SampleDeliverer(Deliverer):
             opts={
                 '--copy-links': None,
                 '--recursive': None,
-#                '--perms': None,
-#                '--chmod': 'o+rwX,ug-rwx',
+                '--perms': None,
+                '--chmod': 'u+rwX,og-rwx',
                 '--verbose': None,
                 '--exclude': ["*rsync.out","*rsync.err"]
             })

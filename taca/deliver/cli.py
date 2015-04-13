@@ -5,16 +5,28 @@ from ngi_pipeline.utils.communication import mail_analysis
 from taca.deliver import deliver as _deliver
 
 @click.group()
+@click.pass_context
 @click.option('--deliverypath', type=click.STRING,
 			  help="Deliver to this destination folder")
 @click.option('--stagingpath', type=click.STRING,
 			  help="Stage the delivery under this path")
+@click.option('--uppnexid', type=click.STRING,
+			  help="Use this UppnexID instead of fetching from database")
 @click.option('--operator', type=click.STRING, default=None, multiple=True,
 			  help="Email address to notify operator at. Multiple operators can be specified")
-def deliver(deliverypath,stagingpath,operator):
+@click.option('--stage_only', is_flag=True, default=False,
+			  help="Only stage the delivery but do not transfer any files")
+def deliver(ctx,deliverypath,stagingpath,uppnexid,operator,stage_only):
     """ Deliver methods entry point
     """
-    pass
+    if deliverypath is None:
+        del ctx.params['deliverypath']
+    if stagingpath is None:
+        del ctx.params['stagingpath']
+    if uppnexid is None:
+        del ctx.params['uppnexid']
+    if operator is None or len(operator) == 0:
+        del ctx.params['operator']
     
 # deliver subcommands
 
@@ -27,8 +39,7 @@ def project(ctx, projectid):
     """
     d = _deliver.ProjectDeliverer(
         projectid,
-        **{k:v for k,v in ctx.parent.params.items() \
-            if v is not None and len(v) > 0})
+        **ctx.parent.params)
     try:
         if d.deliver_project():
             d.log.info("All samples in {} successfully delivered".format(
@@ -66,7 +77,7 @@ def sample(ctx, projectid, sampleid):
         d = _deliver.SampleDeliverer(
             projectid,
             sid,
-            **{k:v for k,v in ctx.parent.params.items() if v is not None and len(v) > 0})
+            **ctx.parent.params)
         try:
             d.deliver_sample()
         except Exception as e:
