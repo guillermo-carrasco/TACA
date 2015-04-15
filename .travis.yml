@@ -6,7 +6,7 @@ python:
 before_install:
     - export CHARON_BASE_URL=""
     - export CHARON_API_TOKEN=""
-    - echo "foo: bar" >  ~/.ngipipeline/ngi_config.yaml
+    - echo "foo: bar" >  /home/travis/.ngipipeline/ngi_config.yaml
 
 install:
     - python setup.py install
