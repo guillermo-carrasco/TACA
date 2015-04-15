@@ -1,7 +1,7 @@
 """ CLI for the deliver subcommand
 """
 import click
-from ngi_pipeline.utils.communication import mail_analysis
+from taca.utils.misc import send_mail
 from taca.deliver import deliver as _deliver
 
 @click.group()
@@ -29,7 +29,7 @@ def deliver(ctx,deliverypath,stagingpath,uppnexid,operator,stage_only):
         del ctx.params['operator']
     
 # deliver subcommands
-
+        
 ## project delivery
 @deliver.command()
 @click.pass_context
@@ -40,31 +40,8 @@ def project(ctx, projectid):
     d = _deliver.ProjectDeliverer(
         projectid,
         **ctx.parent.params)
-    try:
-        if d.deliver_project():
-            d.log.info("All samples in {} successfully delivered".format(
-                str(d)))
-        else:
-            d.log.info("Some samples in {} failed to be delivered "\
-                "properly".format(str(d)))
-    except Exception as e:
-        try:
-            mail_analysis(
-                projectid,
-                engine_name="Project Delivery",
-                info_text=str(e),
-                recipient=d.config.get('operator'),
-                subject="project delivery failed: {}".format(str(d)),
-                origin="taca deliver project"
-            )
-        except Exception as me:
-            d.log.error("delivering {} failed - reason: {}, but operator {} could not "\
-                "be notified - reason: {}".format(
-                str(d),e,d.config.get('operator'),me))
-        else:
-            d.log.error("delivering {} failed - reason: {}, operator {} has been "\
-                "notified".format(str(d),str(e),d.config.get('operator')))
-
+    _exec_delivery(d,d.deliver_project)
+    
 ## sample delivery
 @deliver.command()
 @click.pass_context
@@ -78,23 +55,36 @@ def sample(ctx, projectid, sampleid):
             projectid,
             sid,
             **ctx.parent.params)
+        _exec_delivery(d,d.deliver_sample)
+
+# helper function to handle error reporting
+def _exec_delivery(deliver_obj,deliver_fn):
+    try:
+        if deliver_fn():
+            deliver_obj.log.info(
+                "{} delivered successfully".format(str(deliver_obj)))
+        else:
+            deliver_obj.log.info(
+                "{} delivered with some errors, check log".format(
+                    str(deliver_obj)))
+    except Exception as e:
         try:
-            d.deliver_sample()
-        except Exception as e:
-            try:
-                mail_analysis(
-                    projectid,
-                    sample_name=sid,
-                    engine_name="Sample Delivery",
-                    info_text=str(e),
-                    recipient=d.config.get('operator'),
-                    subject="a sample delivery failed: {}".format(str(d)),
-                    origin="taca deliver sample"
-                )
-            except Exception as me:
-                d.log.error("delivering {} failed - reason: {}, but operator {} could not "\
-                    "be notified - reason: {}".format(
-                    str(d),e,d.config.get('operator'),me))
-            else:
-                d.log.error("delivering {} failed - reason: {}, operator {} has been "\
-                    "notified".format(str(d),str(e),d.config.get('operator')))
+            send_mail(
+                subject="[ERROR] a delivery failed: {}".format(str(deliver_obj)),
+                content="Project: {}\nSample: {}\nCommand: {}\n\n"\
+                    "Additional information:{}\n".format(
+                        deliver_obj.projectid,
+                        deliver_obj.sampleid,
+                        str(deliver_fn),
+                        str(e)
+                    ),
+                recipient=d.config.get('operator'))
+        except Exception as me:
+            deliver_obj.log.error(
+                "delivering {} failed - reason: {}, but operator {} could not "\
+                "be notified - reason: {}".format(
+                    str(deliver_obj),e,deliver_obj.config.get('operator'),me))
+        else:
+            d.log.error("delivering {} failed - reason: {}, operator {} has been "\
+                "notified".format(
+                    str(deliver_obj),str(e),deliver_obj.config.get('operator')))
