@@ -1,31 +1,6 @@
 log:
     log_file: data/taca.log
 
-storage:
-    data_dirs:
-        - /srv/illumina/hiseq_data
-        - /srv/illumina/miseq_data
-    archive_dirs:
-        - /srv/illumina/hiseq_data/nosync
-        - /srv/illumina/miseq_data/nosync
-    irods:
-        irodsHome: /ssUppnexZone/proj/a2010002
-
-cleanup:
-    archive:
-        root: /Users/senthilkumarpanneerselvam/temp/taca_test/archive
-        days: 90
-    illumina:
-        root: /Users/senthilkumarpanneerselvam/temp/taca_test/illumina
-        days: 90
-    analysis:
-        root: /Users/senthilkumarpanneerselvam/temp/taca_test/analysis
-        days: 90
-    swestore:
-        root: /ssUppnexZone/proj/a2010002
-        days: 480
-    deleted_log: delivered_and_deleted
-
 deliver:
     analysispath: data/ANALYSIS/_PROJECTID_
     datapath: data/DATA/_PROJECTID_

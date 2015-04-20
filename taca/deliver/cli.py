@@ -16,6 +16,9 @@ from taca.deliver import deliver as _deliver
 			  help="Email address to notify operator at. Multiple operators can be specified")
 @click.option('--stage_only', is_flag=True, default=False,
 			  help="Only stage the delivery but do not transfer any files")
+@click.option('--force', is_flag=True, default=False,
+			  help="Force delivery, even if e.g. analysis has not finished or "\
+                  "sample has already been delivered")
 def deliver(ctx,deliverypath,stagingpath,uppnexid,operator,stage_only):
     """ Deliver methods entry point
     """

@@ -93,25 +93,6 @@ class Deliverer(object):
         return self.wrap_database_query(
             self.dbcon().sample_get,self.projectid,self.sampleid)
 
-    def update_delivery_status(self, status="DELIVERED"):
-        """ Update the delivery_status field in the database to the supplied 
-            status for the project and sample specified by this instance
-            :returns: the result from the underlying api call
-            :raises DelivererDatabaseError: 
-                if an error occurred when communicating with the database
-        """
-        update_fn = self.dbcon().sample_update \
-            if self.sampleid is not None \
-            else self.dbcon().project_update
-        args = [self.projectid]
-        if self.sampleid is not None:
-            args.append(self.sampleid)
-        kwargs = {'delivery_status': status}
-        return self.wrap_database_query(
-            update_fn,
-            *args,
-            **kwargs)
-            
     def wrap_database_query(self,query_fn,*query_args,**query_kwargs):
         """ Wrapper calling the supplied method with the supplied arguments
             :param query_fn: function reference in the CharonSession class that
@@ -178,11 +159,7 @@ class Deliverer(object):
                     agent.dest_path = dst
                     try:
                         agent.transfer()
-                    except transfer.TransferError as e:
-                        self.log.warning("failed to stage file '{}' when "\
-                            "delivering {} - reason: {}".format(
-                                src,str(self),e))
-                    except transfer.SymlinkError as e:
+                    except (transfer.TransferError, transfer.SymlinkError) as e:
                         self.log.warning("failed to stage file '{}' when "\
                             "delivering {} - reason: {}".format(
                                 src,str(self),e))
@@ -290,7 +267,6 @@ class ProjectDeliverer(Deliverer):
         # right now, don't catch any errors since we're assuming any thrown 
         # errors needs to be handled by manual intervention
         status = True
-        print(", ".join([s.get('sampleid') for s in sampleentries.get('samples')]))
         for sampleentry in sampleentries.get('samples',[]):
             st = SampleDeliverer(
                 self.projectid,sampleentry.get('sampleid')
@@ -301,6 +277,18 @@ class ProjectDeliverer(Deliverer):
             self.update_delivery_status()
         return status
 
+    def update_delivery_status(self, status="DELIVERED"):
+        """ Update the delivery_status field in the database to the supplied 
+            status for the project specified by this instance
+            :returns: the result from the underlying api call
+            :raises DelivererDatabaseError: 
+                if an error occurred when communicating with the database
+        """
+        return self.wrap_database_query(
+            self.dbcon().project_update,
+            self.projectid,
+            delivery_status=status)
+            
 class SampleDeliverer(Deliverer):
     """
         A class for handling sample deliveries
@@ -335,11 +323,11 @@ class SampleDeliverer(Deliverer):
                 "error '{}' occurred during delivery of {}".format(
                     str(e),str(self)))
             raise
-        if sampleentry.get('delivery_status') == 'DELIVERED':
+        if sampleentry.get('delivery_status') == 'DELIVERED' and not self.force:
             self.log.info(
                 "{} has already been delivered".format(str(self)))
             return True
-        elif sampleentry.get('analysis_status') != 'ANALYZED':
+        elif sampleentry.get('analysis_status') != 'ANALYZED' and not self.force:
             self.log.info("{} has not finished analysis and will not be "\
                 "delivered".format(str(self)))
             return False
@@ -382,4 +370,17 @@ class SampleDeliverer(Deliverer):
         except transfer.TransferError as e:
             raise DelivererRsyncError(e)
     
+    def update_delivery_status(self, status="DELIVERED"):
+        """ Update the delivery_status field in the database to the supplied 
+            status for the project and sample specified by this instance
+            :returns: the result from the underlying api call
+            :raises DelivererDatabaseError: 
+                if an error occurred when communicating with the database
+        """
+        return self.wrap_database_query(
+            self.dbcon().sample_update,
+            self.projectid,
+            self.sampleid,
+            delivery_status=status)
+            
             

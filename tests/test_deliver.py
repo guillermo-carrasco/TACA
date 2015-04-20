@@ -15,7 +15,7 @@ SAMPLECFG = {
         'datapath': '_ROOTDIR_/DATA',
         'stagingpath': '_ROOTDIR_/STAGING',
         'delivery_folder': '_ROOTDIR_/DELIVERY_DESTINATION',
-        'operator': 'pontus.larsson@medsci.uu.se',
+        'operator': 'operator@domain.com',
         'files_to_deliver': [
             ['_ANALYSISPATH_/level0_folder?_file*',
             '_STAGINGPATH_'],
@@ -81,22 +81,6 @@ class TestDeliverer(unittest.TestCase):
             os.mkdir(p)
             self.create_content(p,level+1,nd)
     
-#    @mock.patch.object(
-#        deliver.db.CharonSession,'project_get',return_value="mocked return value")
-#    def test_project_entry(self,dbmock):
-#        """ retrieving project entry from db and caching result """
-#        self.assertEquals(
-#            self.deliverer.project_entry(),
-#            "mocked return value")
-#        dbmock.project_get.assert_called_with(self.projectid)
-#        dbmock.project_get.reset_mock()
-#        self.assertEquals(
-#            self.deliverer.project_entry(),
-#            "mocked return value")
-#        self.assertFalse(
-#            dbmock.project_get.called,
-#            "project_get method should not have been called for cached result")
-        
     @mock.patch.object(
         deliver.db.CharonSession,'sample_get',return_value="mocked return value")
     def test_fetch_sample_db_entry(self,dbmock):
