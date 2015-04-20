@@ -92,7 +92,12 @@ class Deliverer(object):
         """
         return self.wrap_database_query(
             self.dbcon().sample_get,self.projectid,self.sampleid)
-
+        
+    def update_delivery_status(self, *args, **kwargs):
+        """ Abstract method, should be implemented by subclasses """
+        raise NotImplementedError("This method should be implemented by "\
+        "subclass")
+    
     def wrap_database_query(self,query_fn,*query_args,**query_kwargs):
         """ Wrapper calling the supplied method with the supplied arguments
             :param query_fn: function reference in the CharonSession class that

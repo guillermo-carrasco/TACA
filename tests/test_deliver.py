@@ -97,18 +97,9 @@ class TestDeliverer(unittest.TestCase):
             dbmock.called,
             "sample_get method should not have been called for cached result")
     
-    @mock.patch.object(
-        deliver.db.CharonSession,
-        'sample_update',
-        return_value="mocked return value")
-    def test_update_sample_delivery(self,dbmock):
-        self.assertEquals(
-            self.deliverer.update_delivery_status(),
-            "mocked return value")
-        dbmock.assert_called_with(
-            self.projectid,
-            self.sampleid,
-            delivery_status="DELIVERED")
+    def test_update_sample_delivery(self):
+        with self.assertRaises(NotImplementedError):
+            self.deliverer.update_delivery_status()
         
     @mock.patch.object(
         deliver.db.CharonSession,
@@ -259,25 +250,36 @@ class TestProjectDeliverer(unittest.TestCase):
     def tearDownClass(self):
         shutil.rmtree(self.rootdir)
     
-    def setUp(self):
+    @mock.patch.object(deliver.Deliverer,'dbcon',autospec=db.CharonSession)
+    def setUp(self,dbmock):
         self.casedir = tempfile.mkdtemp(prefix="case_",dir=self.rootdir)
         self.projectid = 'NGIU-P001'
+        self.deliverer = deliver.ProjectDeliverer(
+            self.projectid,
+            rootdir=self.casedir,
+            **SAMPLECFG['deliver'])
         
     def tearDown(self):
         shutil.rmtree(self.casedir)
         
-    @mock.patch.object(deliver,'db',spec=True)
-    def test_init(self,dbmock):
+    def test_init(self):
         """ A ProjectDeliverer should initiate properly """
-        try:
-            self.deliverer = deliver.ProjectDeliverer(
-                self.projectid,
-                rootdir=self.casedir,
-                **SAMPLECFG['deliver'])
-        except:
-            return False
-        else:
-            return True
+        self.assertIsInstance(
+            getattr(self,'deliverer'),
+            deliver.ProjectDeliverer)
+    
+    @mock.patch.object(
+        deliver.db.CharonSession,
+        'project_update',
+        return_value="mocked return value")
+    def test_update_delivery_status(self,dbmock):
+        """ Updating the delivery status for a project """
+        self.assertEquals(
+            self.deliverer.update_delivery_status(),
+            "mocked return value")
+        dbmock.assert_called_with(
+            self.projectid,
+            delivery_status="DELIVERED")
 
 class TestSampleDeliverer(unittest.TestCase):  
     
@@ -289,24 +291,37 @@ class TestSampleDeliverer(unittest.TestCase):
     def tearDownClass(self):
         shutil.rmtree(self.rootdir)
     
-    def setUp(self):
+    @mock.patch.object(deliver.Deliverer,'dbcon',autospec=db.CharonSession)
+    def setUp(self,dbmock):
         self.casedir = tempfile.mkdtemp(prefix="case_",dir=self.rootdir)
         self.projectid = 'NGIU-P001'
         self.sampleid = 'NGIU-S001'
-        
+        self.deliverer = deliver.SampleDeliverer(
+            self.projectid,
+            self.sampleid,
+            rootdir=self.casedir,
+            **SAMPLECFG['deliver'])
+            
     def tearDown(self):
         shutil.rmtree(self.casedir)
     
-    @mock.patch.object(deliver,'db',spec=True)
-    def test_init(self,dbmock):
+    def test_init(self):
         """ A SampleDeliverer should initiate properly """
-        try:
-            self.deliverer = deliver.SampleDeliverer(
-                self.projectid,
-                self.sampleid,
-                rootdir=self.casedir,
-                **SAMPLECFG['deliver'])
-        except:
-            return False
-        else: 
-            return True
+        self.assertIsInstance(
+            getattr(self,'deliverer'),
+            deliver.SampleDeliverer)
+    
+    @mock.patch.object(
+        deliver.db.CharonSession,
+        'sample_update',
+        return_value="mocked return value")
+    def test_update_delivery_status(self,dbmock):
+        """ Updating the delivery status for a sample """
+        self.assertEquals(
+            self.deliverer.update_delivery_status(),
+            "mocked return value")
+        dbmock.assert_called_with(
+            self.projectid,
+            self.sampleid,
+            delivery_status="DELIVERED")
+        

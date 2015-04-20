@@ -19,7 +19,7 @@ from taca.deliver import deliver as _deliver
 @click.option('--force', is_flag=True, default=False,
 			  help="Force delivery, even if e.g. analysis has not finished or "\
                   "sample has already been delivered")
-def deliver(ctx,deliverypath,stagingpath,uppnexid,operator,stage_only):
+def deliver(ctx,deliverypath,stagingpath,uppnexid,operator,stage_only,force):
     """ Deliver methods entry point
     """
     if deliverypath is None:
