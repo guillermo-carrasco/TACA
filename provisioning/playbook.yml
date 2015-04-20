@@ -1,0 +1,14 @@
+---
+- hosts: all
+  remote_user: vagrant
+  sudo: yes
+  roles:
+    - common
+    - robinandeer.miniconda
+
+  vars:
+    miniconda_modify_bashrc: yes
+    miniconda_environments:
+      - name: develop
+        python_version: 2.7
+        pkgs: 'pip ipython setuptools'

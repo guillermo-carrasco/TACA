@@ -1,0 +1,19 @@
+---
+- name: upgrade apt
+  sudo: yes
+  apt: upgrade=yes
+
+- name: install base packages
+  apt: name={{ item }} update_cache={{ update_apt_cache }} force=yes state=installed
+  with_items:
+    - build-essential
+    - git
+    - python-dev
+    - python-pip
+    - python-pycurl
+    - python-virtualenv
+    - supervisor
+    - wget
+    - vim
+    - tmux
+  tags: packages
