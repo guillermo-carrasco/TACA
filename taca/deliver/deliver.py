@@ -3,16 +3,18 @@
 """
 import datetime
 import glob
-import hashlib
+import logging
 import os
 import re
+
 from ngi_pipeline.database import classes as db
 from ngi_pipeline.utils.classes import memoized
-from taca.log import LOG
 from taca.utils.config import CONFIG
 from taca.utils.filesystem import create_folder
 from taca.utils.misc import hashfile
 from taca.utils import transfer
+
+logger = logging.getLogger(__name__)
 
 class DelivererError(Exception): pass
 class DelivererDatabaseError(DelivererError): pass
@@ -31,12 +33,11 @@ class Deliverer(object):
             :param string hash_algorithm: algorithm to use for calculating 
                 file checksums, defaults to sha1
         """
-        self.log = LOG
         # override configuration options with options given on the command line
         self.config = CONFIG.get('deliver',{})
         self.config.update(kwargs)
         # set items in the configuration as attributes
-        for k,v in self.config.items():
+        for k, v in self.config.items():
             setattr(self,k,v)
         self.projectid = projectid
         self.sampleid = sampleid
@@ -158,14 +159,14 @@ class Deliverer(object):
         create_folder(os.path.dirname(digestpath))
         try: 
             with open(digestpath,'w') as dh:
-                agent = transfer.SymlinkAgent(None,None,relative=True,log=self.log)
+                agent = transfer.SymlinkAgent(None, None, relative=True)
                 for src, dst, digest in self.gather_files():
                     agent.src_path = src
                     agent.dest_path = dst
                     try:
                         agent.transfer()
                     except (transfer.TransferError, transfer.SymlinkError) as e:
-                        self.log.warning("failed to stage file '{}' when "\
+                        logger.warning("failed to stage file '{}' when "\
                             "delivering {} - reason: {}".format(
                                 src,str(self),e))
                     if digest is not None:
@@ -260,14 +261,12 @@ class ProjectDeliverer(Deliverer):
             :returns: True if all samples were delivered successfully, False if
                 any sample was not properly delivered or ready to be delivered
         """
-        self.log.info(
-            "Delivering {} to {}".format(str(self),self.deliverypath))
+        logger.info("Delivering {} to {}".format(str(self),self.deliverypath))
         try:
             sampleentries = self.project_sample_entries()
         except DelivererDatabaseError as e:
-            self.log.error(
-                "error '{}' occurred during delivery of {}".format(
-                    str(e),str(self)))
+            logger.error("error '{}' occurred during delivery of {}"
+                         .format(str(e), str(self)))
             raise
         # right now, don't catch any errors since we're assuming any thrown 
         # errors needs to be handled by manual intervention
@@ -319,21 +318,19 @@ class SampleDeliverer(Deliverer):
                 has taken place but should be replaced
             :raises DelivererError: if the delivery failed
         """
-        self.log.info(
-            "Delivering {} to {}".format(str(self),self.deliverypath))
+        logger.info("Delivering {} to {}".format(str(self), self.deliverypath))
         try:
             sampleentry = sampleentry or self.sample_entry()
         except DelivererDatabaseError as e:
-            self.log.error(
+            logger.error(
                 "error '{}' occurred during delivery of {}".format(
                     str(e),str(self)))
             raise
         if sampleentry.get('delivery_status') == 'DELIVERED' and not self.force:
-            self.log.info(
-                "{} has already been delivered".format(str(self)))
+            logger.info("{} has already been delivered".format(str(self)))
             return True
         elif sampleentry.get('analysis_status') != 'ANALYZED' and not self.force:
-            self.log.info("{} has not finished analysis and will not be "\
+            logger.info("{} has not finished analysis and will not be "\
                 "delivered".format(str(self)))
             return False
         else:
@@ -341,11 +338,11 @@ class SampleDeliverer(Deliverer):
             # notification to operator
             if not self.stage_delivery():
                 raise DelivererError("sample was not properly staged")
-            self.log.info("{} successfully staged".format(str(self)))
+            logger.info("{} successfully staged".format(str(self)))
             if not self.stage_only:
                 if not self.do_delivery():
                     raise DelivererError("sample was not properly delivered")
-                self.log.info("{} successfully delivered".format(str(self)))
+                logger.info("{} successfully delivered".format(str(self)))
                 self.update_delivery_status()
             return True
     
@@ -359,9 +356,9 @@ class SampleDeliverer(Deliverer):
             self.expand_path(self.stagingpath),
             dest_path=self.expand_path(self.deliverypath),
             digestfile=self.delivered_digestfile(),
-            remote_host=getattr(self,'remote_host',None), 
-            remote_user=getattr(self,'remote_user',None), 
-            log=self.log,
+            remote_host=getattr(self,'remote_host', None), 
+            remote_user=getattr(self,'remote_user', None), 
+            log=logger,
             opts={
                 '--copy-links': None,
                 '--recursive': None,
