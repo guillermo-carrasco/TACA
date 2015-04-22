@@ -1,13 +1,13 @@
 """Storage methods and utilities"""
-
-from datetime import datetime
 import getpass
 import os
 import logging
-from multiprocessing import Pool
 import re
 import shutil
 import time
+
+from datetime import datetime
+from multiprocessing import Pool
 
 from statusdb.db import connections as statusdb
 from taca.utils.config import CONFIG

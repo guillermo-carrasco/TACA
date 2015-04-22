@@ -1,11 +1,12 @@
 """ Analysis methods for TACA """
 import csv
-from datetime import datetime
 import glob
 import logging
 import os
 import re
 import subprocess
+
+from datetime import datetime
 
 import requests
 
