@@ -81,12 +81,14 @@ def cleanup_processing(days):
         misc.send_mail(sbj, msg, cnt)
 
 
-def archive_to_swestore(days, run=None, max_runs=None):
+def archive_to_swestore(days, run=None, max_runs=None, force=False, compress_only=False):
     """Send runs (as archives) in NAS nosync to swestore for backup
 
     :param int days: number fo days to check threshold
     :param str run: specific run to send swestore
     :param int max_runs: number of runs to be processed simultaneously
+    :param bool force: Force the archiving even if the run is not complete
+    :param bool compress_only: Compress the run without sending it to swestore
     """
     # If the run is specified in the command line, check that exists and archive
     if run:
@@ -103,7 +105,7 @@ def archive_to_swestore(days, run=None, max_runs=None):
                     "the absolute path or relative path being in the correct directory.".format(run)))
             else:
                 with filesystem.chdir(base_dir):
-                    _archive_run((run, days))
+                    _archive_run((run, days, force, compress_only))
         else:
             LOG.error("The name {} doesn't look like an Illumina run".format(os.path.basename(run)))
     # Otherwise find all runs in every data dir on the nosync partition
@@ -116,7 +118,7 @@ def archive_to_swestore(days, run=None, max_runs=None):
                                             and not os.path.exists("{}.archiving".format(r.split('.')[0]))]
                 if to_be_archived:
                     pool = Pool(processes=len(to_be_archived) if not max_runs else max_runs)
-                    pool.map_async(_archive_run, ((run, days) for run in to_be_archived))
+                    pool.map_async(_archive_run, ((run, days, force, compress_only) for run in to_be_archived))
                     pool.close()
                     pool.join()
                 else:
@@ -197,10 +199,13 @@ def cleanup_uppmax(site, days, dry_run=False):
 #############################################################
 # Class helper methods, not exposed as commands/subcommands #
 #############################################################
-def _archive_run((run, days)):
+def _archive_run((run, days, force, compress_only)):
     """ Archive a specific run to swestore
 
     :param str run: Run directory
+    :param int days: Days to consider a run old
+    :param bool force: Force the archiving even if the run is not complete
+    :param bool compress_only: Only compress the run without sending it to swestore
     """
 
     def _send_to_swestore(f, dest, remove=True):
@@ -231,15 +236,19 @@ def _archive_run((run, days)):
             LOG.info("Run {} is not {} days old yet. Not archiving".format(run, str(days)))
     else:
         rta_file = os.path.join(run, 'RTAComplete.txt')
-        if os.stat(rta_file).st_mtime < time.time() - (86400 * days):
+        if not os.path.exists(rta_file) and not force:
+            LOG.warn(("Run {} doesn't seem to be completed and --force option was "
+                      "not enabled, not archiving the run".format(run)))
+        if force or (os.path.exists(rta_file) and os.stat(rta_file).st_mtime < time.time() - (86400 * days)):
             LOG.info("Compressing run {}".format(run))
             # Compress with pbzip2
             misc.call_external_command('tar --use-compress-program=pbzip2 -cf {run}.tar.bz2 {run}'.format(run=run))
             LOG.info('Run {} successfully compressed! Removing from disk...'.format(run))
             shutil.rmtree(run)
-            _send_to_swestore('{}.tar.bz2'.format(run), CONFIG.get('storage').get('irods').get('irodsHome'))
+            if not compress_only:
+                _send_to_swestore('{}.tar.bz2'.format(run), CONFIG.get('storage').get('irods').get('irodsHome'))
         else:
-            LOG.info("Run {} is not {} days old yet. Not archiving".format(run, str(days)))
+            LOG.info("Run {} is not completed or is not {} days old yet. Not archiving".format(run, str(days)))
     os.remove("{}.archiving".format(run.split('.')[0]))
 
 
