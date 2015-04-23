@@ -2,14 +2,15 @@
 """
 import logging
 
-LOG = logging.getLogger('TACA')
-LOG.setLevel(logging.INFO)
+# get root logger
+ROOT_LOG = logging.getLogger()
+ROOT_LOG.setLevel(logging.INFO)
 
 # Console logger
-s_h = logging.StreamHandler()
+stream_handler = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-s_h.setFormatter(formatter)
-LOG.addHandler(s_h)
+stream_handler.setFormatter(formatter)
+ROOT_LOG.addHandler(stream_handler)
 
 LOG_LEVELS = {
     'ERROR': logging.ERROR,
@@ -19,16 +20,16 @@ LOG_LEVELS = {
 }
 
 def init_logger_file(log_file, log_level='INFO'):
-    """ Append a FileHandler to the general logger.
+    """ Append a FileHandler to the root logger.
 
     :param str log_file: Path to the log file
     :param str log_level: Logging level
     """
     log_level = LOG_LEVELS[log_level] if log_level in LOG_LEVELS.keys() else logging.INFO
 
-    LOG.setLevel(log_level)
+    ROOT_LOG.setLevel(log_level)
 
-    fh = logging.FileHandler(log_file)
-    fh.setLevel(log_level)
-    fh.setFormatter(formatter)
-    LOG.addHandler(fh)
+    file_handle = logging.FileHandler(log_file)
+    file_handle.setLevel(log_level)
+    file_handle.setFormatter(formatter)
+    ROOT_LOG.addHandler(file_handle)
