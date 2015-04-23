@@ -300,7 +300,7 @@ def samplesheet_to_dict(samplesheet):
             return samplesheet_dict
 
     except ValueError:
-        LOG.warning("Corrupt samplesheet %s, please fix it" % samplesheet)
+        logger.warning("Corrupt samplesheet %s, please fix it" % samplesheet)
         pass
 
 

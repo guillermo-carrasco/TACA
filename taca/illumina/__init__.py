@@ -1,11 +1,11 @@
 """ Submodule with Illumina-related code
 """
+import logging
 import os
 
 from datetime import datetime
 from xml.etree import ElementTree as ET
 
-from taca.log import LOG
 from taca.utils import misc
 from taca.utils.config import CONFIG
 from taca.utils.filesystem import chdir
@@ -14,7 +14,7 @@ from taca.utils.filesystem import chdir
 def demultiplex_HiSeq_X(run):
     """ Demultiplexing for HiSeq X runs
     """
-    LOG.info('Building bcl2fastq command')
+    logger.info('Building bcl2fastq command')
     config = CONFIG['preprocessing']
     with chdir(run):
         cl_options = config['bcl2fastq']
@@ -87,12 +87,12 @@ def demultiplex_HiSeq_X(run):
         if cl_options.get('write-fastq-reverse-complement'):
             cl.append('--write-fastq-reverse-complement')
 
-        LOG.info(("BCL to FASTQ conversion and demultiplexing started for "
+        logger.info(("BCL to FASTQ conversion and demultiplexing started for "
                   " run {} on {}".format(os.path.basename(run), datetime.now())))
 
         misc.call_external_command_detached(cl, with_log_files=True)
 
-        LOG.info(("BCL to FASTQ conversion and demultiplexing finished for "
+        logger.info(("BCL to FASTQ conversion and demultiplexing finished for "
                   "run {} on {}".format(os.path.basename(run), datetime.now())))
 
 
