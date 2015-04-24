@@ -12,4 +12,15 @@
 
 This package contains several tools for projects and data management in the [National Genomics Infrastructure](https://portal.scilifelab.se/genomics/) in Stockholm, Sweden.
 
+### Install for development
+You can setup a demo/development environment using [Vagrant][vagrant] provisioned by [Ansible][ansible].
+
+```bash
+$ ansible-galaxy install robinandeer.miniconda
+$ vagrant up && vagrant ssh
+
+# [inside virtual machince]
+$ bash /vagrant/provisioning/run-me.sh
+```
+
 For a more detailed documentation please go to [the documentation page](http://taca.readthedocs.org/en/latest/).

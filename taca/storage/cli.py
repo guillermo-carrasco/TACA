@@ -17,13 +17,17 @@ def storage(ctx, days, run):
 @click.option('--backend', type=click.Choice(['swestore']), required=True,
               help='Long term storage backend')
 @click.option('-m','--max-runs', type=click.INT, help='Limit the number of runs to be archived simultaneously')
+@click.option('-f', '--force', is_flag=True, help=("Force archiving even if the run "
+												   "is not complete (not RTAComplete.txt file found)"))
+@click.option('-c', '--compress-only', is_flag=True, help='Only compress the run without archiving it')
 @click.pass_context
-def archive(ctx, backend, max_runs):
+def archive(ctx, backend, max_runs, force, compress_only):
     """ Archive old runs to SWESTORE
 	"""
     params = ctx.parent.params
     if backend == 'swestore':
-        st.archive_to_swestore(days=params.get('days'), run=params.get('run'), max_runs=max_runs)
+        st.archive_to_swestore(days=params.get('days'), run=params.get('run'), max_runs=max_runs,
+							   force=force, compress_only=compress_only)
 
 
 @storage.command()

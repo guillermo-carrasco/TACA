@@ -1,12 +1,16 @@
 """
     Helper classes for handling file trasfers
 """
+import logging
 import os
 import shutil
 import subprocess
-from taca.log import LOG
+
 from taca.utils.filesystem import create_folder
 from taca.utils.misc import hashfile, call_external_command
+
+logger = logging.getLogger(__name__)
+
 
 class TransferAgent(object):
     """
@@ -23,13 +27,11 @@ class TransferAgent(object):
         """ Creates an agent instance 
             :param string src_path: the file or folder that should be transferred
             :param string dest_path: the destination file or folder
-            :param log: a logger instance
             :param bool validate: whether to validate the transferred files
             :param opts: options that will be passed to the transfer command
         """
         self.src_path = src_path
         self.dest_path = dest_path
-        self.log = kwargs.get('log',LOG)
         self.validate = kwargs.get('validate',False)
         self.cmdopts = opts
 
@@ -55,7 +57,7 @@ class TransferAgent(object):
             :returns: List of formatted options as strings 
         """
         cmdopts = []
-        for param,val in self.cmdopts.items():
+        for param, val in self.cmdopts.items():
             if val is None:
                 cmdopts.append(param)
             else:
@@ -134,7 +136,7 @@ class RsyncAgent(TransferAgent):
                 algorithm will be inferred from the extension of the digest file
             :param opts: options that will be passed to the rsync command
         """
-        super(RsyncAgent,self).__init__(
+        super(RsyncAgent, self).__init__(
             src_path=src_path,
             dest_path=dest_path,
             opts=opts or self.DEFAULT_OPTS,
@@ -143,7 +145,7 @@ class RsyncAgent(TransferAgent):
         self.remote_user = remote_user
         self.digestfile = digestfile
 
-    def transfer(self,transfer_log=None):
+    def transfer(self, transfer_log=None):
         """ 
             Execute the transfer as set up by this instance and, if requested, 
             validate the transfer. 
@@ -263,15 +265,13 @@ class SymlinkAgent(TransferAgent):
             # If the existing target is a symlink that points to the 
             # source, we're all good
             if self.validate_transfer():
-                self.log.debug(
-                    "target exists and points to the correct "\
-                    "source path: '{}'".format(self.src_path))
+                logger.debug("target exists and points to the correct "
+                             "source path: '{}'".format(self.src_path))
                 return True
             # If we are not overwriting, return False
             if not self.overwrite:
-                self.log.debug(
-                    "target '{}' exists and will not be "\
-                    "overwritten".format(self.dest_path))
+                logger.debug("target '{}' exists and will not be "
+                             "overwritten".format(self.dest_path))
                 return False
             # If the target is a mount, let's not mess with it
             if os.path.ismount(self.dest_path):
@@ -279,9 +279,8 @@ class SymlinkAgent(TransferAgent):
             # If the target is a link or a file, we remove it
             if os.path.islink(self.dest_path) or \
                 os.path.isfile(self.dest_path):
-                self.log.debug(
-                    "removing existing target file '{}'".format(
-                        self.dest_path))
+                logger.debug("removing existing target file '{}'"
+                             .format(self.dest_path))
                 try:
                     os.unlink(self.dest_path)
                 except OSError as e:
@@ -289,17 +288,15 @@ class SymlinkAgent(TransferAgent):
             # If the target is a directory, we remove it and
             # everything underneath
             elif os.path.isdir(self.dest_path):
-                self.log.debug(
-                    "removing existing target folder "\
-                    "'{}'".format(self.dest_path))
+                logger.debug("removing existing target folder '{}'"
+                             .format(self.dest_path))
                 try:
                     shutil.rmtree(self.dest_path)
                 except OSError as e:
                     raise SymlinkError(e)        
             # If it's something else, let's bail out
             else:
-                raise SymlinkError(
-                    "target exists and will not be overwritten")
+                raise SymlinkError("target exists and will not be overwritten")
         if not create_folder(os.path.dirname(self.dest_path)):
             raise SymlinkError("failed to create target folder hierarchy")
         try:
@@ -319,11 +316,11 @@ class SymlinkAgent(TransferAgent):
         """
         return os.path.exists(self.dest_path) and \
             os.path.islink(self.dest_path) and \
-            os.path.samefile(self.src_path,self.dest_path)
+            os.path.samefile(self.src_path, self.dest_path)
 
 class TransferError(Exception):
-    def __init__(self,msg,src_path=None,dest_path=None):
-        super(TransferError,self).__init__(msg)
+    def __init__(self, msg, src_path=None, dest_path=None):
+        super(TransferError, self).__init__(msg)
         self.src_path = src_path
         self.dest_path = dest_path
 

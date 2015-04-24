@@ -5,4 +5,4 @@ build
 _build
 *.log
 .DS*
-
+.vagrant/
