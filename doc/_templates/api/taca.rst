@@ -7,6 +7,8 @@ Subpackages
 .. toctree::
 
     taca.analysis
+    taca.deliver
+    taca.illumina
     taca.log
     taca.storage
     taca.utils

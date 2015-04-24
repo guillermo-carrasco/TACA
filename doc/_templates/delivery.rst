@@ -18,7 +18,11 @@ generate a warning in the log but will not trigger an email notification or
 abort the delivery of the current sample. It is therefore important to review
 the log file after delivery.
 
-The delivery is broken down into two steps: *staging* and *transfer*.
+After successful delivery of a sample or project, the delivery status in the
+tracking database will be updated. Failed or aborted deliveries will not result
+in an updated delivery status.
+
+The delivery is broken down into two steps: **staging** and **transfer**.
 
 Staging
 -------
@@ -57,19 +61,21 @@ Below is a description of common configuration options.
 ``operator`` an email address to send notifications of errors occurring during
 delivery to
 
-``stagingpath`` path where files will be staged. /Required/
+``stagingpath`` path where files will be staged. *Required*
 
 ``deliverypath`` path where the staged files will be delivered. If used together
 with option ``remote_host``, this will be the path on the remote system. 
-/Required/
+*Required*
 
 ``files_to_deliver`` a list of tuples, where the first entry is a path 
 expression (this can be a file glob), pointing to a file or folder that should 
 be delivered, and the second entry is the path to where the matching file(s) or 
-folders (and contents) will be staged by symlinking. /Required/
+folders (and contents) will be staged by symlinking. *Required*
 
 ``hash_algorithm`` the algorithm that should be used for calculating the file
 checksums. Accepted values are algorithms available through the Python `hashlib`_ module.
+
+Below is a sample configuration snippet:
 
 .. code-block:: yaml
 
@@ -115,8 +121,10 @@ Project delivery
 ~~~~~~~~~~~~~~~~
 
 Running the delivery script for a project is equivalent to delivering all 
-samples in the project. To launch a delivery for a project, use the command ``
-taca deliver project``. The command takes one positional argument, which is the name of the project to deliver, e.g. 
+samples in the project. To launch a delivery for a project, use the command 
+``taca deliver project``. The command takes one positional argument, which is 
+the name of the project to deliver, e.g. 
+
 ``taca deliver project MH-0336``
 
 Sample delivery
@@ -126,6 +134,7 @@ One or more samples in a project can be delivered with the ``taca deliver
 sample`` command. The command takes any number of positional arguments, where 
 the first is expected to be the project name and the following arguments are
 assumed to be the sample names, e.g. 
+
 ``taca deliver sample MH-0336 Sample1 Sample 3 Sample 5``
  
 Example usage
@@ -133,10 +142,12 @@ Example usage
 
 Deliver all finished samples belonging to project MH-0336 according to the 
 configuration in ``conf/taca_cfg.yaml``:
+
 ``taca -c conf/taca_cfg.yaml deliver project MH-0336``
 
 Deliver the specified samples belonging to the project according to the 
 default configuration:
+
 ``taca deliver sample MH-0336 Sample1 Sample 3 Sample 5``
 
 .. _hashlib: https://docs.python.org/2/library/hashlib.html
