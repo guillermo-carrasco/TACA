@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<RunParameters xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Setup>
+    <Flowcell>HiSeq X HD v2</Flowcell>
+    <ApplicationName>HiSeq X Control Software</ApplicationName>
+    <ApplicationVersion>3.1.26</ApplicationVersion>
+  </Setup>
+  <Version>1</Version>
+</RunParameters>

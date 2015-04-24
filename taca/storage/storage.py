@@ -84,12 +84,14 @@ def cleanup_processing(days):
         misc.send_mail(sbj, msg, cnt)
 
 
-def archive_to_swestore(days, run=None, max_runs=None):
+def archive_to_swestore(days, run=None, max_runs=None, force=False, compress_only=False):
     """Send runs (as archives) in NAS nosync to swestore for backup
 
     :param int days: number fo days to check threshold
     :param str run: specific run to send swestore
     :param int max_runs: number of runs to be processed simultaneously
+    :param bool force: Force the archiving even if the run is not complete
+    :param bool compress_only: Compress the run without sending it to swestore
     """
     # If the run is specified in the command line, check that exists and archive
     if run:
@@ -107,7 +109,7 @@ def archive_to_swestore(days, run=None, max_runs=None):
                               "the correct directory.".format(run)))
             else:
                 with filesystem.chdir(base_dir):
-                    _archive_run((run, days))
+                    _archive_run((run, days, force, compress_only))
         else:
             logger.error("The name {} doesn't look like an Illumina run"
                          .format(os.path.basename(run)))
@@ -122,7 +124,7 @@ def archive_to_swestore(days, run=None, max_runs=None):
                                   and not os.path.exists("{}.archiving".format(r.split('.')[0]))]
                 if to_be_archived:
                     pool = Pool(processes=len(to_be_archived) if not max_runs else max_runs)
-                    pool.map_async(_archive_run, ((run, days) for run in to_be_archived))
+                    pool.map_async(_archive_run, ((run, days, force, compress_only) for run in to_be_archived))
                     pool.close()
                     pool.join()
                 else:
@@ -205,33 +207,33 @@ def cleanup_uppmax(site, days, dry_run=False):
 #############################################################
 # Class helper methods, not exposed as commands/subcommands #
 #############################################################
-def _archive_run((run, days)):
+def _archive_run((run, days, force, compress_only)):
     """ Archive a specific run to swestore
 
     :param str run: Run directory
+    :param int days: Days to consider a run old
+    :param bool force: Force the archiving even if the run is not complete
+    :param bool compress_only: Only compress the run without sending it to swestore
     """
 
-    def _send_to_swestore(file_path, dest, remove=True):
+    def _send_to_swestore(f, dest, remove=True):
         """ Send file to swestore checking adler32 on destination and eventually
         removing the file from disk
 
-        :param str file_path: File to remove
+        :param str f: File to remove
         :param str dest: Destination directory in Swestore
         :param bool remove: If True, remove original file from source
         """
-        if not filesystem.is_in_swestore(file_path):
-            logger.info("Sending {} to swestore".format(file_path))
-            misc.call_external_command('iput -K -P {file} {dest}'
-                                       .format(file=file_path, dest=dest),
-                                       with_log_files=True)
-            logger.info('Run {} sent correctly and checksum was okay.'
-                        .format(file_path))
+        if not filesystem.is_in_swestore(f):
+            logger.info("Sending {} to swestore".format(f))
+            misc.call_external_command('iput -K -P {file} {dest}'.format(file=f, dest=dest),
+                    with_log_files=True)
+            logger.info('Run {} sent correctly and checksum was okay.'.format(f))
         else:
-            logger.warn('Run {} is already in Swestore, not sending it again'
-                        .format(file_path))
+            logger.warn('Run {} is already in Swestore, not sending it again'.format(f))
         if remove:
-            logger.info('Removing run'.format(file_path))
-            os.remove(file_path)
+            logger.info('Removing run'.format(f))
+            os.remove(f)
 
     # Create state file to say that the run is being archived
     open("{}.archiving".format(run.split('.')[0]), 'w').close()
@@ -239,21 +241,22 @@ def _archive_run((run, days)):
         if os.stat(run).st_mtime < time.time() - (86400 * days):
             _send_to_swestore(run, CONFIG.get('storage').get('irods').get('irodsHome'))
         else:
-            logger.info("Run {} is not {} days old yet. Not archiving"
-                        .format(run, str(days)))
+            logger.info("Run {} is not {} days old yet. Not archiving".format(run, str(days)))
     else:
         rta_file = os.path.join(run, 'RTAComplete.txt')
-        if os.stat(rta_file).st_mtime < time.time() - (86400 * days):
+        if not os.path.exists(rta_file) and not force:
+            logger.warn(("Run {} doesn't seem to be completed and --force option was "
+                      "not enabled, not archiving the run".format(run)))
+        if force or (os.path.exists(rta_file) and os.stat(rta_file).st_mtime < time.time() - (86400 * days)):
             logger.info("Compressing run {}".format(run))
             # Compress with pbzip2
             misc.call_external_command('tar --use-compress-program=pbzip2 -cf {run}.tar.bz2 {run}'.format(run=run))
-            logger.info('Run {} successfully compressed! Removing from disk...'
-                        .format(run))
+            logger.info('Run {} successfully compressed! Removing from disk...'.format(run))
             shutil.rmtree(run)
-            _send_to_swestore('{}.tar.bz2'.format(run), CONFIG.get('storage').get('irods').get('irodsHome'))
+            if not compress_only:
+                _send_to_swestore('{}.tar.bz2'.format(run), CONFIG.get('storage').get('irods').get('irodsHome'))
         else:
-            logger.info("Run {} is not {} days old yet. Not archiving"
-                        .format(run, str(days)))
+            logger.info("Run {} is not completed or is not {} days old yet. Not archiving".format(run, str(days)))
     os.remove("{}.archiving".format(run.split('.')[0]))
 
 

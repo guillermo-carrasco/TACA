@@ -38,32 +38,6 @@ def check_config_options(config):
             "refer to the README file."))
 
 
-def is_finished(run):
-    """ Checks if a run is finished or not. Check corresponding status file
-
-    :param str run: Run directory
-    """
-    return os.path.exists(os.path.join(run, 'RTAComplete.txt'))
-
-
-def processing_status(run):
-    """ Returns the processing status of a sequencing run. Status are:
-
-        TO_START - The BCL conversion and demultiplexing process has not yet started
-        IN_PROGRESS - The BCL conversion and demultiplexing process is started but not completed
-        COMPLETED - The BCL conversion and demultiplexing process is completed
-
-    :param str run: Run directory
-    """
-    demux_dir = os.path.join(run, 'Demultiplexing')
-    if not os.path.exists(demux_dir):
-        return 'TO_START'
-    elif os.path.exists(os.path.join(demux_dir, 'Stats', 'DemultiplexingStats.xml')):
-        return 'COMPLETED'
-    else:
-        return 'IN_PROGRESS'
-
-
 def is_transferred(run, transfer_file):
     """ Checks wether a run has been transferred to the analysis server or not.
         Returns true in the case in which the tranfer is ongoing.
@@ -326,103 +300,13 @@ def samplesheet_to_dict(samplesheet):
             return samplesheet_dict
 
     except ValueError:
-        logger.warning("Corrupt samplesheet %s, please fix it", samplesheet)
+        logger.warning("Corrupt samplesheet %s, please fix it" % samplesheet)
+        pass
 
 
-def run_bcl2fastq(run, config):
-    """ Runs bcl2fast with the parameters found in the configuration file. After
-    that, demultiplexed FASTQ files are sent to the analysis server.
-
-    :param str run: Run directory
-    :param dict config: Parset configuration file
-    """
-    logger.info('Building bcl2fastq command')
-    with chdir(run):
-        cl_options = config['bcl2fastq']
-        cl = [cl_options.get('path')]
-
-        # Main options
-        if cl_options.get('runfolder'):
-            cl.extend(['--runfolder', cl_options.get('runfolder')])
-        cl.extend(['--output-dir', cl_options.get('output-dir', 'Demultiplexing')])
-
-        # Advanced options
-        if cl_options.get('input-dir'):
-            cl.extend(['--input-dir', cl_options.get('input-dir')])
-        if cl_options.get('intensities-dir'):
-            cl.extend(['--intensities-dir', cl_options.get('intensities-dir')])
-        if cl_options.get('interop-dir'):
-            cl.extend(['--interop-dir', cl_options.get('interop-dir')])
-        if cl_options.get('stats-dir'):
-            cl.extend(['--stats-dir', cl_options.get('stats-dir')])
-        if cl_options.get('reports-dir'):
-            cl.extend(['--reports-dir', cl_options.get('reports-dir')])
-
-        # Processing cl_options
-        threads = cl_options.get('loading-threads')
-        if threads and type(threads) is int:
-            cl.extend(['--loading-threads', '{}'.format(threads)])
-        threads = cl_options.get('demultiplexing-threads')
-        if threads and type(threads) is int:
-            cl.extend(['--demultiplexing-threads', '{}'.format(threads)])
-        threads = cl_options.get('processing-threads')
-        if threads and type(threads) is int:
-            cl.extend(['--processing-threads', '{}'.format(threads)])
-        threads = cl_options.get('writing-threads')
-        if threads and type(threads) is int:
-            cl.extend(['--writing-threads', '{}'.format(threads)])
-
-        # Behavioral options
-        adapter_stringency = cl_options.get('adapter-stringency')
-        if adapter_stringency and type(adapter_stringency) is float:
-            cl.extend(['--adapter-stringency', adapter_stringency])
-        aggregated_tiles = cl_options.get('aggregated-tiles')
-        if aggregated_tiles and aggregated_tiles in ['AUTO', 'YES', 'NO']:
-            cl.extend(['--aggregated-tiles', aggregated_tiles])
-        barcode_missmatches = cl_options.get('barcode-missmatches')
-        if barcode_missmatches and type(barcode_missmatches) is int \
-                and barcode_missmatches in range(3):
-            cl.extend(['--barcode-missmatches', barcode_missmatches])
-        if cl_options.get('create-fastq-for-index-reads'):
-            cl.append('--create-fastq-for-index-reads')
-        if cl_options.get('ignore-missing-bcls'):
-            cl.append('--ignore-missing-bcls')
-        if cl_options.get('ignore-missing-filter'):
-            cl.append('--ignore-missing-filter')
-        if cl_options.get('ignore-missing-locs'):
-            cl.append('--ignore-missing-locs')
-        mask = cl_options.get('mask-short-adapter-reads')
-        if mask and type(mask) is int:
-            cl.extend(['--mask-short-adapter-reads', mask])
-        minimum = cl_options.get('minimum-trimmed-reads')
-        if minimum and type(minimum) is int:
-            cl.extend(['--minimum-trimmed-reads', minimum])
-        if cl_options.get('tiles'):
-            cl.extend(['--tiles', cl_options.get('tiles')])
-
-        if cl_options.get('use-bases-mask'):
-            cl.extend(['--use-bases-mask', cl_options.get('use-bases-mask')])
-
-        if cl_options.get('with-failed-reads'):
-            cl.append('--with-failed-reads')
-        if cl_options.get('write-fastq-reverse-complement'):
-            cl.append('--write-fastq-reverse-complement')
-
-        logger.info(("BCL to FASTQ conversion and demultiplexing started for "
-                     " run {} on {}".format(os.path.basename(run),
-                                            datetime.now())))
-
-        misc.call_external_command_detached(cl, with_log_files=True)
-
-        logger.info(("BCL to FASTQ conversion and demultiplexing finished for "
-                     "run {} on {}".format(os.path.basename(run),
-                                           datetime.now())))
-        # Transfer the processed data to the analysis server
-        transfer_run(run, config)
-
-
-def run_demultiplexing(run):
+def run_preprocessing(run):
     """ Run demultiplexing in all data directories """
+
     config = CONFIG['preprocessing']
 
     hiseq_runs = glob.glob(os.path.join(config['hiseq_data'], '1*XX')) if not run else [run]
@@ -459,7 +343,7 @@ def run_demultiplexing(run):
                 else:
                     logger.info('Run {} already transferred to analysis server, skipping it'.format(run_name))
 
-        if not is_finished(run):
+        if not run.is_finished():
             # Check status files and say i.e Run in second read, maybe something
             # even more specific like cycle or something
             logger.info('Run {} is not finished yet'.format(run_name))
