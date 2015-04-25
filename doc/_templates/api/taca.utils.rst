@@ -36,6 +36,14 @@ taca.utils.parsers module
     :undoc-members:
     :show-inheritance:
 
+taca.utils.transfer module
+--------------------------
+
+.. automodule:: taca.utils.transfer
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 Module contents
 ---------------

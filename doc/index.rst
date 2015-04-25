@@ -62,6 +62,14 @@ Code and configuration
 
    _templates/intro
 
+Project and Sample delivery
+---------------------------
+
+.. toctree::
+   :maxdepth: 2
+
+   _templates/delivery
+
 API documentation
 -----------------
 
