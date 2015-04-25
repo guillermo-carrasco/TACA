@@ -15,8 +15,8 @@ be sent to the address specified in the configuration or on the command line
 (see below), and the delivery will skip to the next sample. Errors which are 
 considered to be recoverable (e.g. individual files missing for a sample) will
 generate a warning in the log but will not trigger an email notification or
-abort the delivery of the current sample. It is therefore important to review
-the log file after delivery.
+abort the delivery of the current sample. **It is therefore important to review
+the log file after delivery**.
 
 After successful delivery of a sample or project, the delivery status in the
 tracking database will be updated. Failed or aborted deliveries will not result
@@ -101,31 +101,18 @@ Command line options
 The delivery script can be run for an entire project or for one or more samples
 in a project. The main delivery command is ``taca deliver`` and it takes further
 subcommands as described below. The deliver command accepts a number of options,
-described below.
-
-``--stagingpath`` see configuration option above
-
-``--deliverypath`` see configuration option above
-
-``--uppnexid`` the project identifier that the HPC environment knows. Will be 
-fetched from the database unless explicitly given on the command line
-
-``--operator`` see configuration option above
-
-``--stage_only`` only do the staging step
-
-``--force`` force the delivery of a sample, regardless of the status in the 
-database
+run ``taca deliver --help`` for a description of these.
 
 Project delivery
 ~~~~~~~~~~~~~~~~
 
 Running the delivery script for a project is equivalent to delivering all 
 samples in the project. To launch a delivery for a project, use the command 
-``taca deliver project``. The command takes one positional argument, which is 
-the name of the project to deliver, e.g. 
-
+``taca deliver project``. Typically, the command takes one positional argument, 
+which is the name of the project to deliver, e.g. 
 ``taca deliver project MH-0336``
+
+For a full listing of available options, run the ``taca deliver project --help``
 
 Sample delivery
 ~~~~~~~~~~~~~~~
@@ -134,8 +121,9 @@ One or more samples in a project can be delivered with the ``taca deliver
 sample`` command. The command takes any number of positional arguments, where 
 the first is expected to be the project name and the following arguments are
 assumed to be the sample names, e.g. 
-
 ``taca deliver sample MH-0336 Sample1 Sample 3 Sample 5``
+
+For a full listing of available options, run the ``taca deliver sample --help``
  
 Example usage
 -------------
