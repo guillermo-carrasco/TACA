@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://github.com/SciLifeLab/TACA">
-    <img width="512" height="175" src="artwork/logo-alternative.png"/>
+    <img width="512" height="175" src="artwork/logo.png"/>
   </a>
 </p>
 

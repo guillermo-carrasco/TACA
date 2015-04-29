@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-.. image:: _static/logo-alternative.png
+.. image:: _static/logo.png
     :width: 512
     :height: 175
     :align: center
