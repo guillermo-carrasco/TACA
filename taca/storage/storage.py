@@ -229,11 +229,11 @@ def _archive_run((run, days, force, compress_only)):
             misc.call_external_command('iput -K -P {file} {dest}'.format(file=f, dest=dest),
                     with_log_files=True)
             logger.info('Run {} sent correctly and checksum was okay.'.format(f))
+            if remove:
+                logger.info('Removing run'.format(f))
+                os.remove(f)
         else:
-            logger.warn('Run {} is already in Swestore, not sending it again'.format(f))
-        if remove:
-            logger.info('Removing run'.format(f))
-            os.remove(f)
+            logger.warn('Run {} is already in Swestore, not sending it again nor removing from the disk'.format(f))
 
     # Create state file to say that the run is being archived
     open("{}.archiving".format(run.split('.')[0]), 'w').close()

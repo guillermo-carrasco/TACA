@@ -62,7 +62,8 @@ def is_transferred(run, transfer_file):
 def transfer_run(run, config, analysis=True):
     """ Transfer a run to the analysis server. Will add group R/W permissions to
     the run directory in the destination server so that the run can be processed
-    by any user/account in that group (i.e a functional account...)
+    by any user/account in that group (i.e a functional account...). Run will be
+    moved to data_dir/nosync after transferred.
 
     :param str run: Run directory
     :param dict config: Parsed configuration
