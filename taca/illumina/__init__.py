@@ -15,7 +15,7 @@ def demultiplex_HiSeq_X(run):
     """ Demultiplexing for HiSeq X runs
     """
     logger.info('Building bcl2fastq command')
-    config = CONFIG['preprocessing']
+    config = CONFIG['analysis']
     with chdir(run):
         cl_options = config['bcl2fastq']
         cl = [cl_options.get('XTen')]

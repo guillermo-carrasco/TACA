@@ -10,6 +10,7 @@ from datetime import datetime
 
 import requests
 
+from taca.illumina import Run
 from taca.utils.filesystem import chdir
 from taca.utils.config import CONFIG
 from taca.utils import misc
@@ -23,16 +24,16 @@ def check_config_options(config):
     :param dict config: Parsed configuration file
     """
     try:
-        config['preprocessing']
-        config['preprocessing']['hiseq_data']
-        config['preprocessing']['mfs']
-        config['preprocessing']['bcl2fastq']['path']
-        config['preprocessing']['status_dir']
-        config['preprocessing']['samplesheets_dir']
-        config['preprocessing']['sync']
-        config['preprocessing']['sync']['user']
-        config['preprocessing']['sync']['host']
-        config['preprocessing']['sync']['data_archive']
+        config['analysis']
+        config['analysis']['hiseq_data']
+        config['analysis']['mfs']
+        config['analysis']['bcl2fastq']['path']
+        config['analysis']['status_dir']
+        config['analysis']['samplesheets_dir']
+        config['analysis']['sync']
+        config['analysis']['sync']['user']
+        config['analysis']['sync']['host']
+        config['analysis']['sync']['data_archive']
     except KeyError:
         raise RuntimeError(("Required configuration config not found, please "
             "refer to the README file."))
@@ -311,40 +312,39 @@ def run_preprocessing(run):
     config = CONFIG['preprocessing']
 
     hiseq_runs = glob.glob(os.path.join(config['hiseq_data'], '1*XX')) if not run else [run]
-    for run in hiseq_runs:
-        run_name = os.path.basename(run)
-        logger.info('Checking run {}'.format(run_name))
-        if is_finished(run):
-            status = processing_status(run)
-            if  status == 'TO_START':
+    for _run in hiseq_runs:
+        run = Run(_run)
+        logger.info('Checking run {}'.format(run.id))
+        if run.is_finished:
+            if  run.status == 'TO_START':
                 logger.info(("Starting BCL to FASTQ conversion and "
-                             "demultiplexing for run {}".format(run_name)))
+                             "demultiplexing for run {}".format(run.id)))
                 # work around LIMS problem
                 if prepare_sample_sheet(run, config):
                     run_bcl2fastq(run, config)
-            elif status == 'IN_PROGRESS':
+            elif run.status == 'IN_PROGRESS':
                 logger.info(("BCL conversion and demultiplexing process in "
                              "progress for run {}, skipping it"
-                             .format(run_name)))
-            elif status == 'COMPLETED':
+                             .format(run.id)))
+            elif run.status == 'COMPLETED':
                 logger.info(("Preprocessing of run {} is finished, check if "
                              "run has been transferred and transfer it "
-                             "otherwise".format(run_name)))
+                             "otherwise".format(run.id)))
 
                 t_file = os.path.join(config['status_dir'], 'transfer.tsv')
                 transferred = is_transferred(run, t_file)
                 if not transferred:
                     logger.info("Run {} hasn't been transferred yet."
-                                .format(run_name))
+                                .format(run.id))
                     logger.info('Transferring run {} to {} into {}'
-                                .format(run_name,
+                                .format(run.id,
                         config['sync']['host'],
                         config['sync']['data_archive']))
                     transfer_run(run, config)
                 else:
-                    logger.info('Run {} already transferred to analysis server, skipping it'.format(run_name))
+                    logger.info('Run {} already transferred to analysis server, skipping it'.format(run.id))
 
         if not run.is_finished():
             # Check status files and say i.e Run in second read, maybe something
             # even more specific like cycle or something
-            logger.info('Run {} is not finished yet'.format(run_name))
+            logger.info('Run {} is not finished yet'.format(run.id))
