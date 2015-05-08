@@ -18,27 +18,6 @@ from taca.utils import misc
 logger = logging.getLogger(__name__)
 
 
-def check_config_options(config):
-    """ Check that all needed configuration sections/config are present
-
-    :param dict config: Parsed configuration file
-    """
-    try:
-        config['analysis']
-        config['analysis']['hiseq_data']
-        config['analysis']['mfs']
-        config['analysis']['bcl2fastq']['path']
-        config['analysis']['status_dir']
-        config['analysis']['samplesheets_dir']
-        config['analysis']['sync']
-        config['analysis']['sync']['user']
-        config['analysis']['sync']['host']
-        config['analysis']['sync']['data_archive']
-    except KeyError:
-        raise RuntimeError(("Required configuration config not found, please "
-            "refer to the README file."))
-
-
 def is_transferred(run, transfer_file):
     """ Checks wether a run has been transferred to the analysis server or not.
         Returns true in the case in which the tranfer is ongoing.
@@ -60,14 +39,13 @@ def is_transferred(run, transfer_file):
         return False
 
 
-def transfer_run(run, config, analysis=True):
+def transfer_run(run, analysis=True):
     """ Transfer a run to the analysis server. Will add group R/W permissions to
     the run directory in the destination server so that the run can be processed
     by any user/account in that group (i.e a functional account...). Run will be
     moved to data_dir/nosync after transferred.
 
     :param str run: Run directory
-    :param dict config: Parsed configuration
     :param bool analysis: Trigger analysis on remote server
     """
     with chdir(run):
@@ -80,9 +58,9 @@ def transfer_run(run, config, analysis=True):
         for to_include in config['sync']['include']:
             command_line.append("--include={}".format(to_include))
         command_line.extend(["--exclude=*", "--prune-empty-dirs"])
-        r_user = config['sync']['user']
-        r_host = config['sync']['host']
-        r_dir = config['sync']['data_archive']
+        r_user = CONFIG['analysis']['analysis_server']['user']
+        r_host = CONFIG['analysis']['analysis_server']['host']
+        r_dir = CONFIG['analysis']['analysis_server']['data_archive']
         remote = "{}@{}:{}".format(r_user, r_host, r_dir)
         command_line.extend([run, remote])
 
@@ -99,7 +77,7 @@ def transfer_run(run, config, analysis=True):
             os.remove('transferring')
             raise exception
 
-        t_file = os.path.join(config['status_dir'], 'transfer.tsv')
+        t_file = os.path.join(CONFIG['analysis']['status_dir'], 'transfer.tsv')
         logger.info('Adding run {} to {}'
                     .format(os.path.basename(run), t_file))
         with open(t_file, 'a') as tranfer_file:
@@ -108,46 +86,46 @@ def transfer_run(run, config, analysis=True):
         os.remove('transferring')
 
         if analysis:
-            trigger_analysis(run, config)
+            trigger_analysis(run)
 
 
-def trigger_analysis(run, config):
+def trigger_analysis(run_id):
     """ Trigger the analysis of the flowcell in the analysis sever.
 
-    :param str run: Run directory
-    :param dict config: Parsed configuration
+    :param str run_id: run/flowcell id
     """
-    if not config.get('analysis'):
+    if not CONFIG.get('analysis', {}).get('analysis_server', {}):
         logger.warn(("No configuration found for remote analysis server. "
                      "Not triggering analysis of {}"
-                     .format(os.path.basename(run))))
+                     .format(os.path.basename(run_id))))
     else:
         url = ("http://{host}:{port}/flowcell_analysis/{dir}"
-               .format(host=config['analysis']['host'],
-                       port=config['analysis']['port'],
-                       dir=os.path.basename(run)))
-        params = {'path': config['sync']['data_archive']}
+               .format(host=CONFIG['analysis']['analysis_server']['host'],
+                       port=CONFIG['analysis']['analysis_server']['port'],
+                       dir=os.path.basename(run_id)))
+        params = {'path': CONFIG['analysis']['analysis_server']['data_archive']}
         try:
             r = requests.get(url, params=params)
             if r.status_code != requests.status_codes.codes.OK:
                 logger.warn(("Something went wrong when triggering the "
                              "analysis of {}. Please check the logfile "
                              "and make sure to start the analysis!"
-                             .format(os.path.basename(run))))
+                             .format(os.path.basename(run_id))))
             else:
                 logger.info('Analysis of flowcell {} triggered in {}'
-                            .format(os.path.basename(run),
-                                    config['analysis']['host']))
-                a_file = os.path.join(config['status_dir'], 'analysis.tsv')
+                            .format(os.path.basename(run_id),
+                                    CONFIG['analysis']['analysis_server']['host']))
+                a_file = os.path.join(CONFIG['analysis']['status_dir'], 'analysis.tsv')
                 with open(a_file, 'a') as analysis_file:
                     tsv_writer = csv.writer(analysis_file, delimiter='\t')
-                    tsv_writer.writerow([os.path.basename(run), str(datetime.now())])
+                    tsv_writer.writerow([os.path.basename(run_id), str(datetime.now())])
         except requests.exceptions.ConnectionError:
             logger.warn(("Something went wrong when triggering the analysis "
                          "of {}. Please check the logfile and make sure to "
-                         "start the analysis!".format(os.path.basename(run))))
+                         "start the analysis!".format(os.path.basename(run_id))))
 
-def prepare_sample_sheet(run, config):
+
+def prepare_sample_sheet(run):
     """ This is a temporary function in order to solve the current problem with LIMS system
         not able to generate a compatible samplesheet for HiSeqX. This function needs to massage
         the sample sheet created by GenoLogics in order to correctly demultiplex HiSeqX runs.
@@ -155,14 +133,12 @@ def prepare_sample_sheet(run, config):
         this flowcell will not be processed.
 
         :param str run: Run directory
-        :param dict config: Parset configuration file
-
     """
     #start by checking if samplesheet is in the correct place
     run_name = os.path.basename(run)
     current_year = '20' + run_name[0:2]
-    samplesheets_dirs = config['samplesheets_dir']
-    samplesheets_dir = os.path.join(samplesheets_dirs, current_year)
+    samplesheets_dir = os.path.join(CONFIG['analysis']['samplesheets_dir'],
+                                    current_year)
 
     run_name_componets = run_name.split("_")
     FCID = run_name_componets[3][1:]
@@ -307,21 +283,24 @@ def samplesheet_to_dict(samplesheet):
 
 
 def run_preprocessing(run):
-    """ Run demultiplexing in all data directories """
+    """Run demultiplexing in all data directories
 
-    config = CONFIG['preprocessing']
+    :param str run: Process a particular run instead of looking for runs
+    """
 
-    hiseq_runs = glob.glob(os.path.join(config['hiseq_data'], '1*XX')) if not run else [run]
-    for _run in hiseq_runs:
-        run = Run(_run)
+    def _process(run):
+        """Process a run/flowcell and transfer to analysis server
+
+        :param taca.illumina.Run run: Run to be processed and transferred
+        """
         logger.info('Checking run {}'.format(run.id))
         if run.is_finished:
             if  run.status == 'TO_START':
                 logger.info(("Starting BCL to FASTQ conversion and "
                              "demultiplexing for run {}".format(run.id)))
                 # work around LIMS problem
-                if prepare_sample_sheet(run, config):
-                    run_bcl2fastq(run, config)
+                if prepare_sample_sheet(run.run_dir):
+                    run.demultiplex()
             elif run.status == 'IN_PROGRESS':
                 logger.info(("BCL conversion and demultiplexing process in "
                              "progress for run {}, skipping it"
@@ -331,16 +310,16 @@ def run_preprocessing(run):
                              "run has been transferred and transfer it "
                              "otherwise".format(run.id)))
 
-                t_file = os.path.join(config['status_dir'], 'transfer.tsv')
-                transferred = is_transferred(run, t_file)
+                t_file = os.path.join(CONFIG['analysis']['status_dir'], 'transfer.tsv')
+                transferred = is_transferred(run.run_dir, t_file)
                 if not transferred:
                     logger.info("Run {} hasn't been transferred yet."
                                 .format(run.id))
                     logger.info('Transferring run {} to {} into {}'
                                 .format(run.id,
-                        config['sync']['host'],
-                        config['sync']['data_archive']))
-                    transfer_run(run, config)
+                        CONFIG['analysis']['analysis_server']['sync']['host'],
+                        CONFIG['analysis']['analysis_server']['sync']['data_archive']))
+                    transfer_run(run.run_dir)
                 else:
                     logger.info('Run {} already transferred to analysis server, skipping it'.format(run.id))
 
@@ -348,3 +327,12 @@ def run_preprocessing(run):
             # Check status files and say i.e Run in second read, maybe something
             # even more specific like cycle or something
             logger.info('Run {} is not finished yet'.format(run.id))
+
+    if run:
+        _process(Run(run))
+    else:
+        data_dirs = CONFIG.get('analysis').get('data_dirs')
+        for data_dir in data_dirs:
+            runs = glob.glob(os.path.join(data_dir, '1*XX'))
+            for _run in runs:
+                _process(Run(_run))
