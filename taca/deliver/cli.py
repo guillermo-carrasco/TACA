@@ -1,8 +1,11 @@
 """ CLI for the deliver subcommand
 """
 import click
+import logging
 from taca.utils.misc import send_mail
 from taca.deliver import deliver as _deliver
+
+logger = logging.getLogger(__name__)
 
 @click.group()
 @click.pass_context
@@ -64,10 +67,10 @@ def sample(ctx, projectid, sampleid):
 def _exec_delivery(deliver_obj,deliver_fn):
     try:
         if deliver_fn():
-            deliver_obj.log.info(
+            logger.info(
                 "{} delivered successfully".format(str(deliver_obj)))
         else:
-            deliver_obj.log.info(
+            logger.info(
                 "{} delivered with some errors, check log".format(
                     str(deliver_obj)))
     except Exception as e:
@@ -83,11 +86,11 @@ def _exec_delivery(deliver_obj,deliver_fn):
                     ),
                 recipient=d.config.get('operator'))
         except Exception as me:
-            deliver_obj.log.error(
+            logger.error(
                 "delivering {} failed - reason: {}, but operator {} could not "\
                 "be notified - reason: {}".format(
                     str(deliver_obj),e,deliver_obj.config.get('operator'),me))
         else:
-            d.log.error("delivering {} failed - reason: {}, operator {} has been "\
+            logger.error("delivering {} failed - reason: {}, operator {} has been "\
                 "notified".format(
                     str(deliver_obj),str(e),deliver_obj.config.get('operator')))
