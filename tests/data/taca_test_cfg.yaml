@@ -39,7 +39,7 @@ deliver:
             - _ANALYSISPATH_/piper_ngi/03_genotype_concordance/concordance-check-result-file-should-go-here
             - _STAGINGPATH_/_SAMPLEID_/01-QC
         -
-            - _DATAPATH_/_SAMPLEID_/*/*
+            - _DATAPATH_/_SAMPLEID_/*
             - _STAGINGPATH_/_SAMPLEID_/02-FASTQ
         -
             - _ANALYSISPATH_/piper_ngi/05_processed_alignments/_SAMPLEID_.clean.dedup.recal.ba[im]

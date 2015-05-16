@@ -19,14 +19,16 @@ SAMPLECFG = {
         'files_to_deliver': [
             ['_ANALYSISPATH_/level0_folder?_file*',
             '_STAGINGPATH_'],
-            ['_ANALYSISPATH_/level0_folder2',
+            ['_ANALYSISPATH_/level1_folder2',
             '_STAGINGPATH_'],
             ['_ANALYSISPATH_/*folder0/*/*_file?',
             '_STAGINGPATH_'],
             ['_ANALYSISPATH_/*/_SAMPLEID__folder?_file0',
             '_STAGINGPATH_'],
             ['_ANALYSISPATH_/*/*/this-file-does-not-exist',
-            '_STAGINGPATH_']
+            '_STAGINGPATH_'],
+            ['_ANALYSISPATH_/level0_folder0_file0',
+            '_STAGINGPATH_'],
         ]}}
 
 class TestDeliverer(unittest.TestCase):  
@@ -76,10 +78,14 @@ class TestDeliverer(unittest.TestCase):
                 'w').close()
         if level == self.nlevels:
             return
+        level = level+1
         for nd in xrange(self.nfolders):
-            p = os.path.join(parentdir,"level{}_folder{}".format(level,nd))
-            os.mkdir(p)
-            self.create_content(p,level+1,nd)
+            self.create_content(
+                os.path.join(
+                    parentdir,
+                    "level{}_folder{}".format(level,nd)),
+                level,
+                nd)
     
     @mock.patch.object(
         deliver.db.CharonSession,'sample_get',return_value="mocked return value")
@@ -124,26 +130,29 @@ class TestDeliverer(unittest.TestCase):
         
     def test_gather_files1(self):
         """ Gather files in the top directory """
-        expected = ["level0_folder0_file{}".format(n) 
-                     for n in xrange(self.nfiles)]
+        expected = [
+            os.path.join(
+                self.deliverer.expand_path(self.deliverer.analysispath),
+                "level0_folder0_file{}".format(n)) \
+            for n in xrange(self.nfiles)]
         pattern = SAMPLECFG['deliver']['files_to_deliver'][0]
         self.deliverer.files_to_deliver = [pattern]
         self.assertItemsEqual(
-            [os.path.basename(p) for p,_,_ in self.deliverer.gather_files()],
+            [p for p,_,_ in self.deliverer.gather_files()],
             expected)
             
     def test_gather_files2(self):
         """ Gather a folder in the top directory """
-        expected = [f for _,_,files in os.walk(
+        expected = [os.path.join(d,f) for d,_,files in os.walk(
             os.path.join(
                 self.deliverer.expand_path(self.deliverer.analysispath),
-                "level0_folder2")) for f in files]
+                "level1_folder2")) for f in files]
         pattern = SAMPLECFG['deliver']['files_to_deliver'][1]
         self.deliverer.files_to_deliver = [pattern]
         self.assertItemsEqual(
-            [os.path.basename(p) for p,_,_ in self.deliverer.gather_files()],
+            [p for p,_,_ in self.deliverer.gather_files()],
             expected)
-            
+        
     def test_gather_files3(self):
         """ Gather the files two levels down """
         expected = ["level2_folder{}_file{}".format(m,n) 
@@ -176,7 +185,7 @@ class TestDeliverer(unittest.TestCase):
         self.assertItemsEqual(
             [os.path.basename(p) for p,_,_ in self.deliverer.gather_files()],
             expected)
-            
+    
     def test_stage_delivery1(self):
         """ The correct folder structure should be created and exceptions 
             handled gracefully
@@ -184,13 +193,13 @@ class TestDeliverer(unittest.TestCase):
         gathered_files = (
             os.path.join(
                 self.deliverer.expand_path(self.deliverer.analysispath),
-                "level0_folder1",
-                "level1_folder0",
+                "level1_folder1",
+                "level2_folder0",
                 "level2_folder0_file1"),
             os.path.join(
                 self.deliverer.expand_path(self.deliverer.stagingpath),
-                "level0_folder1_link",
-                "level1_folder0_link",
+                "level1_folder1_link",
+                "level2_folder0_link",
                 "level2_folder0_file1_link"),
             "this-is-the-file-hash")
         with mock.patch.object(deliver,'create_folder',return_value=False):
@@ -216,7 +225,39 @@ class TestDeliverer(unittest.TestCase):
                 'transfer',
                 side_effect=SymlinkError("mocked error")):
                 self.assertTrue(self.deliverer.stage_delivery())
-                
+    
+    def test_stage_delivery2(self):
+        """ A single file should be staged correctly
+        """
+        pattern = SAMPLECFG['deliver']['files_to_deliver'][5]
+        expected = os.path.join(
+            self.deliverer.expand_path(self.deliverer.stagingpath),
+            "level0_folder0_file0")
+        self.deliverer.files_to_deliver = [pattern]
+        self.deliverer.stage_delivery()
+        self.assertTrue(os.path.exists(expected),
+            "The expected file was not staged")
+    
+    def test_stage_delivery3(self):
+        """ Stage a folder and its subfolders in the top directory """
+        expected = [
+            os.path.join(
+                self.deliverer.expand_path(self.deliverer.stagingpath),
+                os.path.relpath(
+                    os.path.join(d,f),
+                    self.deliverer.expand_path(self.deliverer.analysispath))) \
+                for d,_,files in os.walk(
+                    os.path.join(
+                        self.deliverer.expand_path(self.deliverer.analysispath),
+                        "level1_folder2")) \
+                for f in files]
+        pattern = SAMPLECFG['deliver']['files_to_deliver'][1]
+        self.deliverer.files_to_deliver = [pattern]
+        self.deliverer.stage_delivery()
+        self.assertItemsEqual(
+            [os.path.exists(e) for e in expected],
+            [True for i in xrange(len(expected))])
+    
     def test_expand_path(self):
         """ Paths should expand correctly """
         cases = [

@@ -128,21 +128,23 @@ class Deliverer(object):
                 (or None if source is a folder)
         """
         for sfile, dfile in getattr(self,'files_to_deliver',[]):
+            dest_path = self.expand_path(dfile)
             for f in glob.iglob(self.expand_path(sfile)):
                 if (os.path.isdir(f)):
+                    fparent = os.path.dirname(f)
                     # walk over all folders and files below
                     for pdir,_,files in os.walk(f):
                         for current in files:
                             fpath = os.path.join(pdir,current)
                             # use the relative path for the destination path
-                            fname = os.path.relpath(fpath,f)
+                            fname = os.path.relpath(fpath,fparent)
                             yield(fpath,
-                                os.path.join(self.expand_path(dfile),fname),
+                                os.path.join(dest_path,fname),
                                 hashfile(fpath,hasher=self.hash_algorithm) \
                                 if not self.no_checksum else None)
                 else:
                     yield (f, 
-                        os.path.join(self.expand_path(dfile),os.path.basename(f)), 
+                        os.path.join(dest_path,os.path.basename(f)), 
                         hashfile(f,hasher=self.hash_algorithm) \
                         if not self.no_checksum else None)
     
