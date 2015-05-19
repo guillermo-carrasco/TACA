@@ -10,6 +10,7 @@ from taca.utils import misc
 from taca.utils.config import CONFIG
 from taca.utils.filesystem import chdir
 
+logger = logging.getLogger(__name__)
 
 def demultiplex_HiSeq(run):
     """ Demultiplexing for HiSeq (V3/V4) runs
@@ -75,34 +76,32 @@ class Run(object):
         """
         logger.info('Building bcl2fastq command')
         config = CONFIG['analysis']
-        with chdir(run):
+        with chdir(self.run_dir):
             cl = [config.get('bcl2fastq').get(self.run_type)]
-            cl_options = config['bcl2fastq']['options']
+            if config['bcl2fastq'].has_key('options'):
+                cl_options = config['bcl2fastq']['options']
 
-            # Append all options that appear in the configuration file to the main command.
-            # Options that require a value, i.e --use-bases-mask Y8,I8,Y8, will be returned
-            # as a dictionary, while options that doesn't require a value, i.e --no-lane-splitting
-            # will be returned as a simple string
-            for option in cl_options:
-                if isinstance(option, dict):
-                    opt, val = option.popitem()
-                    cl.extend(['--{}'.format(opt), str(val)])
-                else:
-                    cl.append('--{}'.format(option))
+                # Append all options that appear in the configuration file to the main command.
+                # Options that require a value, i.e --use-bases-mask Y8,I8,Y8, will be returned
+                # as a dictionary, while options that doesn't require a value, i.e --no-lane-splitting
+                # will be returned as a simple string
+                for option in cl_options:
+                    if isinstance(option, dict):
+                        opt, val = option.popitem()
+                        cl.extend(['--{}'.format(opt), str(val)])
+                    else:
+                        cl.append('--{}'.format(option))
 
             logger.info(("BCL to FASTQ conversion and demultiplexing started for "
-                      " run {} on {}".format(os.path.basename(run), datetime.now())))
+                      " run {} on {}".format(os.path.basename(self.id), datetime.now())))
 
             misc.call_external_command_detached(cl, with_log_files=True)
-
-            logger.info(("BCL to FASTQ conversion and demultiplexing finished for "
-                      "run {} on {}".format(os.path.basename(run), datetime.now())))
 
 
 
     @property
     def status(self):
-        if self.run_type == 'HiSeq X':
+        if self.run_type == 'HiSeqX':
             demux_dir = os.path.join(self.run_dir, 'Demultiplexing')
             if not os.path.exists(demux_dir):
                 return 'TO_START'
