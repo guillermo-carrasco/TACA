@@ -55,12 +55,12 @@ def transfer_run(run, analysis=True):
         # rsync works in a really funny way, if you don't understand this, refer to
         # this note: http://silentorbit.com/notes/2013/08/rsync-by-extension/
         command_line.append("--include=*/")
-        for to_include in config['sync']['include']:
+        for to_include in CONFIG['analysis']['analysis_server']['sync']['include']:
             command_line.append("--include={}".format(to_include))
         command_line.extend(["--exclude=*", "--prune-empty-dirs"])
         r_user = CONFIG['analysis']['analysis_server']['user']
         r_host = CONFIG['analysis']['analysis_server']['host']
-        r_dir = CONFIG['analysis']['analysis_server']['data_archive']
+        r_dir = CONFIG['analysis']['analysis_server']['sync']['data_archive']
         remote = "{}@{}:{}".format(r_user, r_host, r_dir)
         command_line.extend([run, remote])
 
@@ -317,7 +317,7 @@ def run_preprocessing(run):
                                 .format(run.id))
                     logger.info('Transferring run {} to {} into {}'
                                 .format(run.id,
-                        CONFIG['analysis']['analysis_server']['sync']['host'],
+                        CONFIG['analysis']['analysis_server']['host'],
                         CONFIG['analysis']['analysis_server']['sync']['data_archive']))
                     transfer_run(run.run_dir)
                 else:
