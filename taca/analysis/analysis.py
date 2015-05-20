@@ -294,7 +294,7 @@ def run_preprocessing(run):
         :param taca.illumina.Run run: Run to be processed and transferred
         """
         logger.info('Checking run {}'.format(run.id))
-        if run.is_finished:
+        if run.is_finished():
             if  run.status == 'TO_START':
                 logger.info(("Starting BCL to FASTQ conversion and "
                              "demultiplexing for run {}".format(run.id)))
