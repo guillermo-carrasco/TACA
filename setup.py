@@ -39,7 +39,6 @@ setup(name='taca',
         'taca.subcommands': [
             'storage = taca.storage.cli:storage',
             'analysis = taca.analysis.cli:analysis',
-            'deliver = taca.deliver.cli:deliver',
         ]
     },
     install_requires=install_requires,
