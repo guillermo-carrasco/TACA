@@ -10,91 +10,7 @@ from taca.utils import misc
 from taca.utils.config import CONFIG
 from taca.utils.filesystem import chdir
 
-
-def demultiplex_HiSeq_X(run):
-    """ Demultiplexing for HiSeq X runs
-    """
-    logger.info('Building bcl2fastq command')
-    config = CONFIG['preprocessing']
-    with chdir(run):
-        cl_options = config['bcl2fastq']
-        cl = [cl_options.get('XTen')]
-
-        # Main options
-        if cl_options.get('runfolder'):
-            cl.extend(['--runfolder', cl_options.get('runfolder')])
-        cl.extend(['--output-dir', cl_options.get('output-dir', 'Demultiplexing')])
-
-        # Advanced options
-        if cl_options.get('input-dir'):
-            cl.extend(['--input-dir', cl_options.get('input-dir')])
-        if cl_options.get('intensities-dir'):
-            cl.extend(['--intensities-dir', cl_options.get('intensities-dir')])
-        if cl_options.get('interop-dir'):
-            cl.extend(['--interop-dir', cl_options.get('interop-dir')])
-        if cl_options.get('stats-dir'):
-            cl.extend(['--stats-dir', cl_options.get('stats-dir')])
-        if cl_options.get('reports-dir'):
-            cl.extend(['--reports-dir', cl_options.get('reports-dir')])
-
-        # Processing cl_options
-        threads = cl_options.get('loading-threads')
-        if threads and type(threads) is int:
-            cl.extend(['--loading-threads', '{}'.format(threads)])
-        threads = cl_options.get('demultiplexing-threads')
-        if threads and type(threads) is int:
-            cl.extend(['--demultiplexing-threads', '{}'.format(threads)])
-        threads = cl_options.get('processing-threads')
-        if threads and type(threads) is int:
-            cl.extend(['--processing-threads', '{}'.format(threads)])
-        threads = cl_options.get('writing-threads')
-        if threads and type(threads) is int:
-            cl.extend(['--writing-threads', '{}'.format(threads)])
-
-        # Behavioral options
-        adapter_stringency = cl_options.get('adapter-stringency')
-        if adapter_stringency and type(adapter_stringency) is float:
-            cl.extend(['--adapter-stringency', adapter_stringency])
-        aggregated_tiles = cl_options.get('aggregated-tiles')
-        if aggregated_tiles and aggregated_tiles in ['AUTO', 'YES', 'NO']:
-            cl.etend(['--aggregated-tiles', aggregated_tiles])
-        barcode_missmatches = cl_options.get('barcode-missmatches')
-        if barcode_missmatches and type(barcode_missmatches) is int \
-                and barcode_missmatches in range(3):
-            cl.extend(['--barcode-missmatches', barcode_missmatches])
-        if cl_options.get('create-fastq-for-index-reads'):
-            cl.append('--create-fastq-for-index-reads')
-        if cl_options.get('ignore-missing-bcls'):
-            cl.append('--ignore-missing-bcls')
-        if cl_options.get('ignore-missing-filter'):
-            cl.append('--ignore-missing-filter')
-        if cl_options.get('ignore-missing-locs'):
-            cl.append('--ignore-missing-locs')
-        mask = cl_options.get('mask-short-adapter-reads')
-        if mask and type(mask) is int:
-            cl.extend(['--mask-short-adapter-reads', mask])
-        minimum = cl_options.get('minimum-trimmed-reads')
-        if minimum and type(minimum) is int:
-            cl.extend(['--minimum-trimmed-reads', minimum])
-        if cl_options.get('tiles'):
-            cl.extend(['--tiles', cl_options.get('tiles')])
-
-        if cl_options.get('use-bases-mask'):
-            cl.extend(['--use-bases-mask', cl_options.get('use-bases-mask')])
-
-        if cl_options.get('with-failed-reads'):
-            cl.append('--with-failed-reads')
-        if cl_options.get('write-fastq-reverse-complement'):
-            cl.append('--write-fastq-reverse-complement')
-
-        logger.info(("BCL to FASTQ conversion and demultiplexing started for "
-                  " run {} on {}".format(os.path.basename(run), datetime.now())))
-
-        misc.call_external_command_detached(cl, with_log_files=True)
-
-        logger.info(("BCL to FASTQ conversion and demultiplexing finished for "
-                  "run {} on {}".format(os.path.basename(run), datetime.now())))
-
+logger = logging.getLogger(__name__)
 
 def demultiplex_HiSeq(run):
     """ Demultiplexing for HiSeq (V3/V4) runs
@@ -119,13 +35,6 @@ class Run(object):
         self.id = os.path.basename(run_dir)
         self._extract_run_info()
 
-        if self.run_type == 'HiSeq':
-            self.demultiplex = demultiplex_HiSeq
-        elif self.run_type == 'HiSeq X':
-            self.demultiplex = demultiplex_HiSeq_X
-        elif self.demultiplex == 'MiSeq':
-            self.demultiplex = demultiplex_MiSeq
-
 
     def _extract_run_info(self):
         """ Extracts run info from runParameters.xml and adds it to the class attributes
@@ -144,7 +53,7 @@ class Run(object):
 
         try:
             if 'HiSeq X' in run_type.text:
-                self.run_type = 'HiSeq X'
+                self.run_type = 'HiSeqX'
             elif 'HiSeq Flow Cell' in run_type.text:
                 self.run_type = 'HiSeq'
             elif 'MiSeq' in run_type.text:
@@ -158,9 +67,41 @@ class Run(object):
         """
         return os.path.exists(os.path.join(self.run_dir, 'RTAComplete.txt'))
 
+
+    def demultiplex(self):
+        """Perform demultiplexing of the flowcell.
+
+        Takes software (bcl2fastq version to use) and parameters from the configuration
+        file.
+        """
+        logger.info('Building bcl2fastq command')
+        config = CONFIG['analysis']
+        with chdir(self.run_dir):
+            cl = [config.get('bcl2fastq').get(self.run_type)]
+            if config['bcl2fastq'].has_key('options'):
+                cl_options = config['bcl2fastq']['options']
+
+                # Append all options that appear in the configuration file to the main command.
+                # Options that require a value, i.e --use-bases-mask Y8,I8,Y8, will be returned
+                # as a dictionary, while options that doesn't require a value, i.e --no-lane-splitting
+                # will be returned as a simple string
+                for option in cl_options:
+                    if isinstance(option, dict):
+                        opt, val = option.popitem()
+                        cl.extend(['--{}'.format(opt), str(val)])
+                    else:
+                        cl.append('--{}'.format(option))
+
+            logger.info(("BCL to FASTQ conversion and demultiplexing started for "
+                         " run {} on {}".format(os.path.basename(self.id), datetime.now())))
+
+            misc.call_external_command_detached(cl, with_log_files=True)
+
+
+
     @property
     def status(self):
-        if self.run_type == 'HiSeq X':
+        if self.run_type == 'HiSeqX':
             demux_dir = os.path.join(self.run_dir, 'Demultiplexing')
             if not os.path.exists(demux_dir):
                 return 'TO_START'
