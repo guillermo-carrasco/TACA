@@ -93,7 +93,7 @@ class Run(object):
                         cl.append('--{}'.format(option))
 
             logger.info(("BCL to FASTQ conversion and demultiplexing started for "
-                      " run {} on {}".format(os.path.basename(self.id), datetime.now())))
+                         " run {} on {}".format(os.path.basename(self.id), datetime.now())))
 
             misc.call_external_command_detached(cl, with_log_files=True)
 
