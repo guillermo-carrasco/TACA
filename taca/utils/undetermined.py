@@ -1,0 +1,154 @@
+import re
+import subprocess
+import gzip
+import glob
+import os
+import logging
+import flowcell_parser.classes as cl
+
+logger=logging.getLogger(__name__)
+dmux_folder='.Demultiplexing'
+def postprocess_undertermined(run):
+    check_undetermined_status(run)
+
+
+def check_undetermined_status(run,und_tresh=10, q30_tresh=80, freq_tresh=40, status='COMPLETED'):
+    if os.path.exists(os.path.join(run, dmux_folder)):
+        ss=cl.XTenSampleSheetParser(os.path.join(run, '.SampleSheet.csv'))
+        lb=cl.XTenLaneBarcodeParser(os.path.join(run, dmux_folder, 'Reports', 'html', 'H2WY7CCXX', 'all', 'all', 'all', 'laneBarcode.html'))
+        path_per_lane=get_path_per_lane(run, ss)
+        barcode_per_lane=get_barcode_per_lane(ss)
+        workable_lanes=get_workable_lanes(run, status)
+        for lane in workable_lanes:
+            if is_unpooled_lane(ss,lane):
+               if check_index_freq(run,lane, freq_tresh):
+                    if first_qc_check(lane,lb, und_tresh, q30_tresh):
+                        link_undet_to_sample(run, lane, path_per_lane)
+            else:
+                logger.warn("The lane {}  has been multiplexed, according to the samplesheet and will be skipped.".format(lane))
+
+    else:
+        logger.warn("No demultiplexing folder found, aborting")
+
+def get_workable_lanes(run, status):
+    lanes=[]
+    pattern=re.compile('L00([0-9])')
+    for unde in glob.glob(os.path.join(run, dmux_folder, 'Undetermined_*')):
+        name=os.path.basename(unde)
+        lanes.append(int(pattern.search(name).group(1)))
+    lanes=list(set(lanes))
+    if status =='IN_PROGRESS': 
+        lanes=lanes[:-1]
+    logger.info("going to work with lanes {}".format(lanes))
+    return lanes
+
+
+def link_undet_to_sample(run,lane, path_per_lane):
+    for fastqfile in glob.glob(os.path.join(run, dmux_folder, 'Undetermined_*_L00{}_*'.format(lane))):
+        logger.info("linking file {} to {}".format(fastqfile, path_per_lane[lane]))
+        os.symlink(fastqfile, os.path.join(path_per_lane[lane], os.path.basename(fastqfile)))
+
+def save_index_count(barcodes, run, lane):
+    with open(os.path.join(run, dmux_folder, 'index_count_L{}.tsv'.format(lane)), 'w') as f:
+        for barcode in sorted(barcodes, key=barcodes.get, reverse=True):
+            f.write("{}\t{}\n".format(barcode, barcodes[barcode]))
+
+def check_index_freq(run, lane,freq_tresh):
+    barcodes={}
+    total=0
+    if os.path.exists(os.path.join(run, dmux_folder,'index_count_L{}.tsv'.format(lane))):
+        logger.info("Found index count for lane {}, skipping.".format(lane))
+        return False
+    else:
+        open(os.path.join(run, dmux_folder,'index_count_L{}.tsv'.format(lane)), 'a').close()
+        for fastqfile in glob.glob(os.path.join(run, dmux_folder, 'Undetermined_*_L00{}_R1*'.format(lane))):
+            logger.info("working on {}".format(fastqfile))
+            zcat=subprocess.Popen(['zcat', fastqfile], stdout=subprocess.PIPE)
+            sed=subprocess.Popen(['sed', '-n', "1~4p"],stdout=subprocess.PIPE, stdin=zcat.stdout)
+            awk=subprocess.Popen(['awk', '-F', ":", '{print $NF}'],stdout=subprocess.PIPE, stdin=sed.stdout)
+            zcat.stdout.close()
+            sed.stdout.close()
+            output = awk.communicate()[0]
+            zcat.wait()
+            sed.wait()
+            for barcode in output.split('\n')[:-1]:
+                try:
+                    barcodes[barcode]=barcodes[barcode]+1
+                except KeyError:
+                    barcodes[barcode]=1
+
+        save_index_count(barcodes, run, lane)
+        count, bar = max((v, k) for k, v in barcodes.items())
+        if total * freq_tresh / 100<count:
+            logger.warn("The most frequent barcode of lane {} ({}) found in {} represents {}%, which is over the threshold of {}%".format(lane, bar, fastqfile, count / total * 100, freq_tresh))
+            return False
+        else:
+            return True
+
+
+
+
+def first_qc_check(lane, lb, und_tresh, q30_tresh):
+    d={}
+    for entry in lb.sample_data:
+        if lane == int(entry['Lane']):
+            if entry.get('Sample')=='unknown':
+                if float(entry['% >= Q30bases']) < q30_tresh:
+                    logger.warn("Undetermined indexes of lane {} has a percentage of bases over q30 of {}%, which is below the cutoff of {}% ".format(lane, float(entry['% >= Q30bases']), q30_tresh))
+                    return False
+                d['undet']=int(entry['Clusters'].replace(',',''))
+            else:
+                if float(entry['% >= Q30bases']) < q30_tresh:
+                    logger.warn("Undetermined indexes od lane {} has a percentage of bases over q30 of {}%, which is below the cutoff of {}% ".format(lane, float(entry['% >= Q30bases']), q30_tresh))
+                    return False
+                d['det']=int(entry['Clusters'].replace(',',''))
+
+    if d['undet'] > d['det']+d['undet'] * und_tresh / 100:
+        logger.warn("Lane {} has more than {}% undetermined indexes ({}%)".format(lane, und_tresh,d['undet']/(d['det']+d['undet'])*100))
+        return False
+
+    return True
+
+
+
+
+def get_path_per_lane(run, ss):
+    d={}
+    for l in ss.data:
+        d[int(l['Lane'])]=os.path.join(run, dmux_folder, l['Project'], l['SampleID'])
+
+    return d
+def get_barcode_per_lane(ss):
+    d={}
+    for l in ss.data:
+        d[int(l['Lane'])]=l['index']
+
+    return d
+
+
+def is_unpooled_lane(ss, lane):
+    count=0
+    for l in ss.data:
+        if int(l['Lane']) == lane:
+            count+=1
+    return count==1
+
+def is_unpooled_run(ss):
+    ar=[]
+    for l in ss.data:
+        ar.append(l['Lane'])
+    return len(ar)==len(set(ar))
+
+        
+
+if __name__=="__main__":
+    import sys
+
+    mainlog = logging.getLogger(__name__)
+    mainlog.setLevel(level=logging.INFO)
+    mfh = logging.StreamHandler(sys.stderr)
+    mft = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    mfh.setFormatter(mft)
+    mainlog.addHandler(mfh)
+        
+    postprocess_undertermined("/srv/illumina/HiSeq_X_data/150424_ST-E00214_0031_BH2WY7CCXX")
