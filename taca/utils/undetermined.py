@@ -12,6 +12,9 @@ logger=logging.getLogger(__name__)
 dmux_folder='Demultiplexing'
 
 def check_undetermined_status(run,und_tresh=10, q30_tresh=80, freq_tresh=40, status='COMPLETED'):
+    """Will check for undetermined fastq files, and perform the linking to the sample folder if the
+    quality thresholds are met.
+    """
     if os.path.exists(os.path.join(run, dmux_folder)):
         xtp=cl.XTenParser(run)
         ss=xtp.samplesheet
@@ -31,6 +34,7 @@ def check_undetermined_status(run,und_tresh=10, q30_tresh=80, freq_tresh=40, sta
         logger.warn("No demultiplexing folder found, aborting")
 
 def get_workable_lanes(run, status):
+    """List the lanes that have a .fastq file"""
     lanes=[]
     pattern=re.compile('L00([0-9])')
     for unde in glob.glob(os.path.join(run, dmux_folder, 'Undetermined_*')):
@@ -38,22 +42,27 @@ def get_workable_lanes(run, status):
         lanes.append(int(pattern.search(name).group(1)))
     lanes=list(set(lanes))
     if status =='IN_PROGRESS': 
+        #the last lane is the one that is currently being worked on by bcl2fastq, don't work on it.
         lanes=lanes[:-1]
     logger.info("going to work with lanes {}".format(lanes))
     return lanes
 
 
 def link_undet_to_sample(run,lane, path_per_lane):
+    """symlinks the undetermined file to the right sample folder"""
     for fastqfile in glob.glob(os.path.join(run, dmux_folder, 'Undetermined_*_L00{}_*'.format(lane))):
         logger.info("linking file {} to {}".format(fastqfile, path_per_lane[lane]))
         os.symlink(fastqfile, os.path.join(path_per_lane[lane], os.path.basename(fastqfile)))
 
 def save_index_count(barcodes, run, lane):
+    """writes the barcode counts"""
     with open(os.path.join(run, dmux_folder, 'index_count_L{}.tsv'.format(lane)), 'w') as f:
         for barcode in sorted(barcodes, key=barcodes.get, reverse=True):
             f.write("{}\t{}\n".format(barcode, barcodes[barcode]))
 
 def check_index_freq(run, lane,freq_tresh):
+    """uses subprocess to perform zcat <file> | sed -n '1~4 p' | awk -F ':' '{print $NF}', counts the barcodes and 
+    returns true if the most represented index accounts for less than freq_tresh% of the total"""
     barcodes={}
     if os.path.exists(os.path.join(run, dmux_folder,'index_count_L{}.tsv'.format(lane))):
         logger.info("Found index count for lane {}, skipping.".format(lane))
@@ -89,6 +98,7 @@ def check_index_freq(run, lane,freq_tresh):
 
 
 def first_qc_check(lane, lb, und_tresh, q30_tresh):
+    """checks wether the percentage of bases over q30 for the sample is above the treshold, and if the amount of undetermined is below the treshold"""
     d={}
     for entry in lb.sample_data:
         if lane == int(entry['Lane']):
