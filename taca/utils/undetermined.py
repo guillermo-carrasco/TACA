@@ -131,8 +131,8 @@ def check_index_freq(run, lane, freq_tresh):
         total=sum(barcodes.values())
         count, bar = max((v, k) for k, v in barcodes.items())
         if total * freq_tresh / 100<count:
-            logger.warn("The most frequent barcode of lane {} ({}) found in {} represents {}%, \
-                    which is over the threshold of {}%".format(lane, bar, fastqfile, count / total * 100, freq_tresh))
+            logger.warn("The most frequent barcode of lane {} ({}) found in {} represents {}%, "
+                    "which is over the threshold of {}%".format(lane, bar, fastqfile, count / total * 100, freq_tresh))
             return False
         else:
             return True
@@ -162,14 +162,14 @@ def first_qc_check(lane, lb, und_tresh, q30_tresh):
         if lane == int(entry['Lane']):
             if entry.get('Sample')=='unknown':
                 if float(entry['% >= Q30bases']) < q30_tresh:
-                    logger.warn("Undetermined indexes of lane {} has a percentage of bases over q30 of {}%,\ 
-                            which is below the cutoff of {}% ".format(lane, float(entry['% >= Q30bases']), q30_tresh))
+                    logger.warn("Undetermined indexes of lane {} has a percentage of bases over q30 of {}%," 
+                            "which is below the cutoff of {}% ".format(lane, float(entry['% >= Q30bases']), q30_tresh))
                     return False
                 d['undet']=int(entry['Clusters'].replace(',',''))
             else:
                 if float(entry['% >= Q30bases']) < q30_tresh:
-                    logger.warn("Undetermined indexes od lane {} has a percentage of bases over q30 of {}%, \
-                            which is below the cutoff of {}% ".format(lane, float(entry['% >= Q30bases']), q30_tresh))
+                    logger.warn("Undetermined indexes od lane {} has a percentage of bases over q30 of {}%, "
+                            "which is below the cutoff of {}% ".format(lane, float(entry['% >= Q30bases']), q30_tresh))
                     return False
                 d['det']=int(entry['Clusters'].replace(',',''))
 
