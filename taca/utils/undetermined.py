@@ -4,14 +4,14 @@ import gzip
 import glob
 import os
 import logging
-import taca.flowcell_parser.classes as cl
+import taca.illumina.flowcell_parser.classes as cl
 from taca.utils.config import CONFIG
 
 logger=logging.getLogger(__name__)
 #dmux_folder=CONFIG['analysis']['bcl2fastq']['options']['output_dir']
 dmux_folder='Demultiplexing'
 
-def check_undetermined_status(run,und_tresh=10, q30_tresh=80, freq_tresh=40, status='COMPLETED'):
+def check_undetermined_status(run, und_tresh=10, q30_tresh=80, freq_tresh=40, status='COMPLETED'):
     """Will check for undetermined fastq files, and perform the linking to the sample folder if the
     quality thresholds are met.
     """
@@ -48,7 +48,7 @@ def get_workable_lanes(run, status):
     return lanes
 
 
-def link_undet_to_sample(run,lane, path_per_lane):
+def link_undet_to_sample(run, lane, path_per_lane):
     """symlinks the undetermined file to the right sample folder"""
     for fastqfile in glob.glob(os.path.join(run, dmux_folder, 'Undetermined_*_L00{}_*'.format(lane))):
         logger.info("linking file {} to {}".format(fastqfile, path_per_lane[lane]))
@@ -98,7 +98,8 @@ def check_index_freq(run, lane,freq_tresh):
 
 
 def first_qc_check(lane, lb, und_tresh, q30_tresh):
-    """checks wether the percentage of bases over q30 for the sample is above the treshold, and if the amount of undetermined is below the treshold"""
+    """checks wether the percentage of bases over q30 for the sample is 
+    above the treshold, and if the amount of undetermined is below the treshold"""
     d={}
     for entry in lb.sample_data:
         if lane == int(entry['Lane']):

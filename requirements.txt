@@ -4,4 +4,4 @@ pyyaml
 mock
 statusdb
 ngi_pipeline
-beautiful-soup
+beautifulsoup4
