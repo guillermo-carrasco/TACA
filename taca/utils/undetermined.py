@@ -14,6 +14,16 @@ dmux_folder='Demultiplexing'
 def check_undetermined_status(run, und_tresh=10, q30_tresh=80, freq_tresh=40, status='COMPLETED'):
     """Will check for undetermined fastq files, and perform the linking to the sample folder if the
     quality thresholds are met.
+
+    :param run: path of the flowcell
+    :type run: str
+    :param und_tresh: max percentage of undetermined indexed in a lane allowed
+    :type und_tresh: float
+    :param q30_tresh: lowest percentage of q30 bases allowed
+    :type q30_tresh: float
+    :param freq_tresh: highest allowed percentage of the most common undetermined index
+    :type freq_tresh: float:w
+
     """
     if os.path.exists(os.path.join(run, dmux_folder)):
         xtp=cl.XTenParser(run)
@@ -34,7 +44,16 @@ def check_undetermined_status(run, und_tresh=10, q30_tresh=80, freq_tresh=40, st
         logger.warn("No demultiplexing folder found, aborting")
 
 def get_workable_lanes(run, status):
-    """List the lanes that have a .fastq file"""
+    """List the lanes that have a .fastq file
+
+    :param run: the path to the run folder
+    :type run: str
+    :param status: the demultiplexing status
+    :type status: str
+
+    :rtype: list of ints 
+    :returns:: list of lanes having an undetermined fastq file
+    """
     lanes=[]
     pattern=re.compile('L00([0-9])')
     for unde in glob.glob(os.path.join(run, dmux_folder, 'Undetermined_*')):
@@ -49,20 +68,43 @@ def get_workable_lanes(run, status):
 
 
 def link_undet_to_sample(run, lane, path_per_lane):
-    """symlinks the undetermined file to the right sample folder"""
+    """symlinks the undetermined file to the right sample folder
+    
+    :param run: path of the flowcell
+    :type run: str
+    :param lane: lane identifier
+    :type lane: int
+    :param path_per_lane: {lane:path/to/the/sample}
+    :type path_per_lane: dict"""
     for fastqfile in glob.glob(os.path.join(run, dmux_folder, 'Undetermined_*_L00{}_*'.format(lane))):
         logger.info("linking file {} to {}".format(fastqfile, path_per_lane[lane]))
         os.symlink(fastqfile, os.path.join(path_per_lane[lane], os.path.basename(fastqfile)))
 
 def save_index_count(barcodes, run, lane):
-    """writes the barcode counts"""
+    """writes the barcode counts
+
+    :param barcodes: {barcode:count}
+    :type barcodes: dict
+    :param run: path to the flowcell
+    :type run: str
+    """
     with open(os.path.join(run, dmux_folder, 'index_count_L{}.tsv'.format(lane)), 'w') as f:
         for barcode in sorted(barcodes, key=barcodes.get, reverse=True):
             f.write("{}\t{}\n".format(barcode, barcodes[barcode]))
 
-def check_index_freq(run, lane,freq_tresh):
+def check_index_freq(run, lane, freq_tresh):
     """uses subprocess to perform zcat <file> | sed -n '1~4 p' | awk -F ':' '{print $NF}', counts the barcodes and 
-    returns true if the most represented index accounts for less than freq_tresh% of the total"""
+    returns true if the most represented index accounts for less than freq_tresh% of the total
+    
+    :param run: path to the flowcell
+    :type run: str
+    :param lane: lane identifier
+    :type lane: int
+    :param freq_tresh: maximal allowed frequency of the most frequent undetermined index
+    :type frew_tresh: float
+    :rtype: boolean
+    :returns: True if the checks passes, False otherwise
+    """
     barcodes={}
     if os.path.exists(os.path.join(run, dmux_folder,'index_count_L{}.tsv'.format(lane))):
         logger.info("Found index count for lane {}, skipping.".format(lane))
@@ -99,7 +141,21 @@ def check_index_freq(run, lane,freq_tresh):
 
 def first_qc_check(lane, lb, und_tresh, q30_tresh):
     """checks wether the percentage of bases over q30 for the sample is 
-    above the treshold, and if the amount of undetermined is below the treshold"""
+    above the treshold, and if the amount of undetermined is below the treshold
+    
+    :param lane: lane identifier
+    :type lane: int
+    :param lb: reader of laneBarcodes.html
+    :type lb: flowcell_parser.classes.XTenLaneBarcodes
+    :param und_tresh: maximal allowed percentage of undetermined indexes
+    :type und_tresh: float
+    :param q30_tresh: maximal allowed  percentage of bases over q30
+    :type q30_tresh: float
+
+    :rtype: boolean
+    :returns: True of the qc checks pass, False otherwise
+    
+    """
     d={}
     for entry in lb.sample_data:
         if lane == int(entry['Lane']):
@@ -124,12 +180,28 @@ def first_qc_check(lane, lb, und_tresh, q30_tresh):
 
 
 def get_path_per_lane(run, ss):
+    """
+    :param run: the path to the flowcell
+    :type run: str
+    :param ss: SampleSheet reader
+    :type ss: flowcell_parser.XTenSampleSheet
+    """
     d={}
     for l in ss.data:
-        d[int(l['Lane'])]=os.path.join(run, dmux_folder, l['Project'], l['SampleID'])
+        try:
+            d[int(l['Lane'])]=os.path.join(run, dmux_folder, l['Project'], l['SampleID'])
+        except KeyError:
+            logger.error("Can't find the path to the sample, is 'Project' in the samplesheet ?")
+            d[int(l['Lane'])]=os.path.join(run, dmux_folder)
 
     return d
 def get_barcode_per_lane(ss):
+    """
+    :param ss: SampleSheet reader
+    :type ss: flowcell_parser.XTenSampleSheet
+    :rtype: dict
+    :returns: dictionnary of lane:barcode
+    """
     d={}
     for l in ss.data:
         d[int(l['Lane'])]=l['index']
@@ -138,6 +210,14 @@ def get_barcode_per_lane(ss):
 
 
 def is_unpooled_lane(ss, lane):
+    """
+    :param ss: SampleSheet reader
+    :type ss: flowcell_parser.XTenSampleSheet
+    :param lane: lane identifier
+    :type lane: int
+    :rtype: boolean
+    :returns: True if the samplesheet has one entry for that lane, False otherwise
+    """
     count=0
     for l in ss.data:
         if int(l['Lane']) == lane:
@@ -145,6 +225,12 @@ def is_unpooled_lane(ss, lane):
     return count==1
 
 def is_unpooled_run(ss):
+    """
+    :param ss: SampleSheet reader
+    :type ss: flowcell_parser.XTenSampleSheet
+    :rtype: boolean
+    :returns: True if the samplesheet has one entry per lane, False otherwise
+    """
     ar=[]
     for l in ss.data:
         ar.append(l['Lane'])
