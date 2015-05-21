@@ -4,18 +4,18 @@ import gzip
 import glob
 import os
 import logging
-import flowcell_parser.classes as cl
+import taca.flowcell_parser.classes as cl
+from taca.utils.config import CONFIG
 
 logger=logging.getLogger(__name__)
-dmux_folder='.Demultiplexing'
-def postprocess_undertermined(run):
-    check_undetermined_status(run)
-
+#dmux_folder=CONFIG['analysis']['bcl2fastq']['options']['output_dir']
+dmux_folder='Demultiplexing'
 
 def check_undetermined_status(run,und_tresh=10, q30_tresh=80, freq_tresh=40, status='COMPLETED'):
     if os.path.exists(os.path.join(run, dmux_folder)):
-        ss=cl.XTenSampleSheetParser(os.path.join(run, '.SampleSheet.csv'))
-        lb=cl.XTenLaneBarcodeParser(os.path.join(run, dmux_folder, 'Reports', 'html', 'H2WY7CCXX', 'all', 'all', 'all', 'laneBarcode.html'))
+        xtp=cl.XTenParser(run)
+        ss=xtp.samplesheet
+        lb=xtp.lanebarcodes
         path_per_lane=get_path_per_lane(run, ss)
         barcode_per_lane=get_barcode_per_lane(ss)
         workable_lanes=get_workable_lanes(run, status)
@@ -55,7 +55,6 @@ def save_index_count(barcodes, run, lane):
 
 def check_index_freq(run, lane,freq_tresh):
     barcodes={}
-    total=0
     if os.path.exists(os.path.join(run, dmux_folder,'index_count_L{}.tsv'.format(lane))):
         logger.info("Found index count for lane {}, skipping.".format(lane))
         return False
@@ -78,6 +77,7 @@ def check_index_freq(run, lane,freq_tresh):
                     barcodes[barcode]=1
 
         save_index_count(barcodes, run, lane)
+        total=sum(barcodes.values())
         count, bar = max((v, k) for k, v in barcodes.items())
         if total * freq_tresh / 100<count:
             logger.warn("The most frequent barcode of lane {} ({}) found in {} represents {}%, which is over the threshold of {}%".format(lane, bar, fastqfile, count / total * 100, freq_tresh))
@@ -151,4 +151,4 @@ if __name__=="__main__":
     mfh.setFormatter(mft)
     mainlog.addHandler(mfh)
         
-    postprocess_undertermined("/srv/illumina/HiSeq_X_data/150424_ST-E00214_0031_BH2WY7CCXX")
+    check_undetermined_status("/srv/illumina/HiSeq_X_data/150424_ST-E00214_0031_BH2WY7CCXX")

@@ -5,6 +5,7 @@ import logging
 import os
 import re
 import subprocess
+import tava.utils.undetermined as ud
 
 from datetime import datetime
 
@@ -305,11 +306,15 @@ def run_preprocessing(run):
                 logger.info(("BCL conversion and demultiplexing process in "
                              "progress for run {}, skipping it"
                              .format(run.id)))
+                ud.check_undetermined_status(run.run_dir, status=run.status, und_tresh=CONFIG['undetermined']['lane_treshold'],
+                   q30_tresh=CONFIG['undetermined']['q30_treshold'], freq_tresh=CONFIG['undetermined']['highest_freq'])
             elif run.status == 'COMPLETED':
                 logger.info(("Preprocessing of run {} is finished, check if "
                              "run has been transferred and transfer it "
                              "otherwise".format(run.id)))
 
+                ud.check_undetermined_status(run.run_dir, status=run.status, und_tresh=CONFIG['undetermined']['lane_treshold'],
+                   q30_tresh=CONFIG['undetermined']['q30_treshold'], freq_tresh=CONFIG['undetermined']['highest_freq'])
                 t_file = os.path.join(CONFIG['analysis']['status_dir'], 'transfer.tsv')
                 transferred = is_transferred(run.run_dir, t_file)
                 if not transferred:
