@@ -30,12 +30,13 @@ def check_undetermined_status(run, und_tresh=10, q30_tresh=80, freq_tresh=40, st
         ss=xtp.samplesheet
         lb=xtp.lanebarcodes
         path_per_lane=get_path_per_lane(run, ss)
-        barcode_per_lane=get_barcode_per_lane(ss)
+        samples_per_lane=get_samples_per_lane(ss)
         workable_lanes=get_workable_lanes(run, status)
         for lane in workable_lanes:
             if is_unpooled_lane(ss,lane):
                if check_index_freq(run,lane, freq_tresh):
                     if first_qc_check(lane,lb, und_tresh, q30_tresh):
+                        rename_undet(run, lane, samples_per_lane)
                         link_undet_to_sample(run, lane, path_per_lane)
             else:
                 logger.warn("The lane {}  has been multiplexed, according to the samplesheet and will be skipped.".format(lane))
@@ -43,6 +44,20 @@ def check_undetermined_status(run, und_tresh=10, q30_tresh=80, freq_tresh=40, st
     else:
         logger.warn("No demultiplexing folder found, aborting")
 
+def rename_undet(run, lane, samples_per_lane):
+    """Renames the Undetermined fastq file by prepending the sample name in front of it
+
+    :param run: the path to the run folder
+    :type run: str
+    :param status: the demultiplexing status
+    :type status: str
+    :param samples_per_lane: lane:sample dict
+    :type status: dict
+    """
+    for file in glob.glob(os.path.join(run, dmux_folder, "Undetermined*L00{}*".format(lane))):
+        new_name="{}_{}".format(samples_per_lane[lane],os.path.basename(file))
+        logger.info("Renaming {} to {}".format(os.path.dirname(file), new_name))
+        os.rename(file, os.path.join(os.path.dirname(file), new_name))
 def get_workable_lanes(run, status):
     """List the lanes that have a .fastq file
 
@@ -192,12 +207,26 @@ def get_path_per_lane(run, ss):
     d={}
     for l in ss.data:
         try:
-            d[int(l['Lane'])]=os.path.join(run, dmux_folder, l['Project'], l['SampleID'])
+            d[int(l['Lane'])]=os.path.join(run, dmux_folder, l['Project'], l['SampleName'])
         except KeyError:
             logger.error("Can't find the path to the sample, is 'Project' in the samplesheet ?")
             d[int(l['Lane'])]=os.path.join(run, dmux_folder)
 
     return d
+def get_samples_per_lane(ss):
+    """
+    :param ss: SampleSheet reader
+    :type ss: flowcell_parser.XTenSampleSheet
+    :rtype: dict
+    :returns: dictionnary of lane:samplename
+    """
+    d={}
+    for l in ss.data:
+        s=l['SampleName'].replace("Sample_", "").replace("-", "_")
+        d[int(l['Lane'])]=l['SampleName']
+
+    return d
+
 def get_barcode_per_lane(ss):
     """
     :param ss: SampleSheet reader

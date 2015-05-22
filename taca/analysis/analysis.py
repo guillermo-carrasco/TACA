@@ -12,7 +12,7 @@ from datetime import datetime
 import requests
 
 from taca.illumina import Run
-from taca.utils.filesystem import chdir
+from taca.utils.filesystem import chdir, control_fastq_filename
 from taca.utils.config import CONFIG
 from taca.utils import misc
 
@@ -313,10 +313,14 @@ def run_preprocessing(run):
                              "run has been transferred and transfer it "
                              "otherwise".format(run.id)))
 
+                control_fastq_filename(os.join(run.run_dir, CONFIG['analysis']['bcl2fastq']['options']['output_dir']))
                 ud.check_undetermined_status(run.run_dir, status=run.status, und_tresh=CONFIG['analysis']['undetermined']['lane_treshold'],
                    q30_tresh=CONFIG['undetermined']['q30_treshold'], freq_tresh=CONFIG['analysis']['undetermined']['highest_freq'])
                 t_file = os.path.join(CONFIG['analysis']['status_dir'], 'transfer.tsv')
                 transferred = is_transferred(run.run_dir, t_file)
+                #####TESTING THINGY
+                transferred=True
+                ######
                 if not transferred:
                     logger.info("Run {} hasn't been transferred yet."
                                 .format(run.id))
