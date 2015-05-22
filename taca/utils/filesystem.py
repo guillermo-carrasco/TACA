@@ -81,3 +81,19 @@ def is_in_file(file_path, text):
     with open(file_path, 'r') as f:
         content = f.read()
     return text in content
+
+def control_fastq_filename(demux_folder):
+    """Looks for fastq files with a hyphen in the sample nsame
+    and turns it in an underscore.
+
+    :param str demux_folder: path to the demultiplexed folder
+    """
+    pattern=re.compile("^(P[0-9]+)-[0-9]{3,4}.+fastq.*$")
+    with root, dirs, files in os.walk(demux_folder):
+        for f in files:
+            matches=pattern.search(f)
+            if matches:
+                new_name=f.replace("{}-{}".format(matches.group(1), matches.group(2)), "{}_{}".format(matches.group(1), matches.group(2)))
+                os.move(os.path.join(root, f), os.path.join(root, new_name))
+            
+
