@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup #html parser
 class XTenParser(object):
     def __init__(self, path):
         if os.path.exists(path):
-            self.log=logging.getLogger('XTenParser')
+            self.log=logging.getLogger(__name__)
             self.path=path
             self.parse()
             self.create_db_obj()
@@ -150,10 +150,46 @@ class XTenSampleSheetParser(object):
     .data : a list of the values under the [Data] section. These values are stored in a dict format
     .datafields : a list of field names for the data section"""
     def __init__(self, path ):
+        self.log=logging.getLogger(__name__)
         if os.path.exists(path):
             self.parse(path)
         else:
             raise os.error("XTen sample sheet cannot be found at {0}".format(path))
+
+    def generate_clean_samplesheet(self, fields_to_remove=None, rename_samples=True):
+        """Will generate a 'clean' samplesheet, : the given fields will be removed, and if samples prepended with 'Sample_'
+        this will be removed by default, this can be turned off."""
+        output=""
+        if not fields_to_remove:
+            fields_to_remove=[]
+        #Header
+        output+="[Header]{}".format(os.linesep)
+        for field in self.header:
+            output+="{},{}".format(field.rstrip(), self.header[field].rstrip())
+            output+=os.linesep
+        #Data
+        output+="[Data]{}".format(os.linesep)
+        datafields=[]
+        for field in self.datafields:
+            if field not in fields_to_remove:
+                datafields.append(field)
+        output+=",".join(datafields)
+        output+=os.linesep
+        for line in self.data:
+            line_ar=[]
+            for field in datafields:
+                if rename_samples and 'Sample' in field and line[field].startswith('Sample_'):
+                    line_ar.append(line[field].replace('Sample_',''))
+                else:
+                    line_ar.append(line[field])
+            output+=",".join(line_ar)
+            output+=os.linesep
+
+        return output
+
+
+
+
 
     def parse(self, path):
         flag=None
@@ -174,7 +210,12 @@ class XTenSampleSheetParser(object):
                     flag='data'
                 else:
                     if flag == 'HEADER':
-                       header[line.split(',')[0]]=line.split(',')[1] 
+                        try:
+                            header[line.split(',')[0]]=line.split(',')[1] 
+                        except IndexError as e:
+                            self.log.error("file {} does not seem to be comma separated.".format(path))
+                            raise RunTimeError("Could not parse the samplesheet, does not seem to be comma separated")
+
                     elif flag == 'READS':
                         reads.append(line.split(',')[0])
                     elif flag == 'SETTINGS':
