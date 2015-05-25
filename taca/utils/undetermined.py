@@ -35,7 +35,7 @@ def check_undetermined_status(run, und_tresh=10, q30_tresh=80, freq_tresh=40, st
         for lane in workable_lanes:
             if is_unpooled_lane(ss,lane):
                if check_index_freq(run,lane, freq_tresh):
-                    if first_qc_check(lane,lb, und_tresh, q30_tresh):
+                    if lb and first_qc_check(lane,lb, und_tresh, q30_tresh):
                         rename_undet(run, lane, samples_per_lane)
                         link_undet_to_sample(run, lane, path_per_lane)
             else:
@@ -123,7 +123,7 @@ def check_index_freq(run, lane, freq_tresh):
     """
     barcodes={}
     if os.path.exists(os.path.join(run, dmux_folder,'index_count_L{}.tsv'.format(lane))):
-        logger.info("Found index count for lane {}, skipping.".format(lane))
+        logger.info("Found index count for lane {}.".format(lane))
         with open(os.path.join(run, dmux_folder,'index_count_L{}.tsv'.format(lane))) as idxf:
             for line in idxf:
                 barcodes[line.split('\t')[0]]=int(line.split('\t')[1])
@@ -154,6 +154,7 @@ def check_index_freq(run, lane, freq_tresh):
                 "which is over the threshold of {}%".format(lane, bar, fastqfile, count / total * 100, freq_tresh))
         return False
     else:
+        logger.info("Most frequent undetermined index represents less than {}% of the total, lane {} looks fine.",format(freq_tresh, lane))
         return True
 
 
