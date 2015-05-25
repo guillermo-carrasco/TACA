@@ -88,12 +88,12 @@ def control_fastq_filename(demux_folder):
 
     :param str demux_folder: path to the demultiplexed folder
     """
-    pattern=re.compile("^(P[0-9]+)-[0-9]{3,4}.+fastq.*$")
-    with root, dirs, files in os.walk(demux_folder):
+    pattern=re.compile("^(P[0-9]+)-([0-9]{3,4}).+fastq.*$")
+    for root, dirs, files in os.walk(demux_folder):
         for f in files:
             matches=pattern.search(f)
             if matches:
                 new_name=f.replace("{}-{}".format(matches.group(1), matches.group(2)), "{}_{}".format(matches.group(1), matches.group(2)))
-                os.move(os.path.join(root, f), os.path.join(root, new_name))
+                os.rename(os.path.join(root, f), os.path.join(root, new_name))
             
 

@@ -200,7 +200,7 @@ def run_preprocessing(run):
                              "run has been transferred and transfer it "
                              "otherwise".format(run.id)))
 
-                control_fastq_filename(os.join(run.run_dir, CONFIG['analysis']['bcl2fastq']['options']['output_dir']))
+                control_fastq_filename(os.path.join(run.run_dir, CONFIG['analysis']['bcl2fastq']['options'][0]['output-dir']))
                 ud.check_undetermined_status(run.run_dir, status=run.status, und_tresh=CONFIG['analysis']['undetermined']['lane_treshold'],
                    q30_tresh=CONFIG['analysis']['undetermined']['q30_treshold'], freq_tresh=CONFIG['analysis']['undetermined']['highest_freq'])
                 t_file = os.path.join(CONFIG['analysis']['status_dir'], 'transfer.tsv')
