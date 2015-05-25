@@ -154,7 +154,7 @@ def check_index_freq(run, lane, freq_tresh):
                 "which is over the threshold of {}%".format(lane, bar, fastqfile, count / total * 100, freq_tresh))
         return False
     else:
-        logger.info("Most frequent undetermined index represents less than {}% of the total, lane {} looks fine.",format(freq_tresh, lane))
+        logger.info("Most frequent undetermined index represents less than {}% of the total, lane {} looks fine.".format(freq_tresh, lane))
         return True
 
 
