@@ -56,7 +56,7 @@ def rename_undet(run, lane, samples_per_lane):
     """
     for file in glob.glob(os.path.join(run, dmux_folder, "Undetermined*L00{}*".format(lane))):
         new_name="{}_{}".format(samples_per_lane[lane],os.path.basename(file))
-        logger.info("Renaming {} to {}".format(file, os.path.join(os.path.dirname(file), new_name=)))
+        logger.info("Renaming {} to {}".format(file, os.path.join(os.path.dirname(file), new_name)))
         os.rename(file, os.path.join(os.path.dirname(file), new_name))
 def get_workable_lanes(run, status):
     """List the lanes that have a .fastq file
