@@ -157,7 +157,7 @@ def prepare_sample_sheet(run):
         return False
     try:
         with open(FCID_samplesheet_dest, 'wb') as fcd:
-            fcd.write(ss_reader.generate_clean_samplesheet(fields_to_remove=['index2'], rename_samples=True))
+            fcd.write(ss_reader.generate_clean_samplesheet(fields_to_remove=['index2'], rename_samples=False))
     except Exception as e:
         logger.error(e.text)
         return False

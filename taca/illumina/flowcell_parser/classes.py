@@ -156,9 +156,9 @@ class XTenSampleSheetParser(object):
         else:
             raise os.error("XTen sample sheet cannot be found at {0}".format(path))
 
-    def generate_clean_samplesheet(self, fields_to_remove=None, rename_samples=True):
-        """Will generate a 'clean' samplesheet, : the given fields will be removed, and if samples prepended with 'Sample_'
-        this will be removed by default, this can be turned off."""
+    def generate_clean_samplesheet(self, fields_to_remove=None, rename_samples=False):
+        """Will generate a 'clean' samplesheet, : the given fields will be removed. if rename_samples is True, samples prepended with 'Sample_'
+        are renamed to match the sample name"""
         output=""
         if not fields_to_remove:
             fields_to_remove=[]
