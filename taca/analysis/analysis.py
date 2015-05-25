@@ -194,7 +194,7 @@ def run_preprocessing(run):
                              "progress for run {}, skipping it"
                              .format(run.id)))
                 ud.check_undetermined_status(run.run_dir, status=run.status, und_tresh=CONFIG['analysis']['undetermined']['lane_treshold'],
-                   q30_tresh=CONFIG['undetermined']['q30_treshold'], freq_tresh=CONFIG['analysis']['undetermined']['highest_freq'])
+                   q30_tresh=CONFIG['analysis']['undetermined']['q30_treshold'], freq_tresh=CONFIG['analysis']['undetermined']['highest_freq'])
             elif run.status == 'COMPLETED':
                 logger.info(("Preprocessing of run {} is finished, check if "
                              "run has been transferred and transfer it "
@@ -202,7 +202,7 @@ def run_preprocessing(run):
 
                 control_fastq_filename(os.join(run.run_dir, CONFIG['analysis']['bcl2fastq']['options']['output_dir']))
                 ud.check_undetermined_status(run.run_dir, status=run.status, und_tresh=CONFIG['analysis']['undetermined']['lane_treshold'],
-                   q30_tresh=CONFIG['undetermined']['q30_treshold'], freq_tresh=CONFIG['analysis']['undetermined']['highest_freq'])
+                   q30_tresh=CONFIG['analysis']['undetermined']['q30_treshold'], freq_tresh=CONFIG['analysis']['undetermined']['highest_freq'])
                 t_file = os.path.join(CONFIG['analysis']['status_dir'], 'transfer.tsv')
                 transferred = is_transferred(run.run_dir, t_file)
                 #####TESTING THINGY
