@@ -91,9 +91,10 @@ def link_undet_to_sample(run, lane, path_per_lane):
     :type lane: int
     :param path_per_lane: {lane:path/to/the/sample}
     :type path_per_lane: dict"""
-    for fastqfile in glob.glob(os.path.join(run, dmux_folder, 'Undetermined_*_L00{}_*'.format(lane))):
-        logger.info("linking file {} to {}".format(fastqfile, path_per_lane[lane]))
-        os.symlink(fastqfile, os.path.join(path_per_lane[lane], os.path.basename(fastqfile)))
+    for fastqfile in glob.glob(os.path.join(run, dmux_folder, '*Undetermined_*_L00{}_*'.format(lane))):
+        if not os.path.exists(os.path.join(path_per_lane[lane], os.path.basename(fastqfile))):
+            logger.info("linking file {} to {}".format(fastqfile, path_per_lane[lane]))
+            os.symlink(fastqfile, os.path.join(path_per_lane[lane], os.path.basename(fastqfile)))
 
 def save_index_count(barcodes, run, lane):
     """writes the barcode counts
@@ -123,7 +124,10 @@ def check_index_freq(run, lane, freq_tresh):
     barcodes={}
     if os.path.exists(os.path.join(run, dmux_folder,'index_count_L{}.tsv'.format(lane))):
         logger.info("Found index count for lane {}, skipping.".format(lane))
-        return False
+        with open(os.path.join(run, dmux_folder,'index_count_L{}.tsv'.format(lane))) as idxf:
+            for line in idxf:
+                barcodes[line.split('\t')[0]]=int(line.split('\t')[1])
+
     else:
         open(os.path.join(run, dmux_folder,'index_count_L{}.tsv'.format(lane)), 'a').close()
         for fastqfile in glob.glob(os.path.join(run, dmux_folder, 'Undetermined_*_L00{}_R1*'.format(lane))):
@@ -143,14 +147,14 @@ def check_index_freq(run, lane, freq_tresh):
                     barcodes[barcode]=1
 
         save_index_count(barcodes, run, lane)
-        total=sum(barcodes.values())
-        count, bar = max((v, k) for k, v in barcodes.items())
-        if total * freq_tresh / 100<count:
-            logger.warn("The most frequent barcode of lane {} ({}) found in {} represents {}%, "
-                    "which is over the threshold of {}%".format(lane, bar, fastqfile, count / total * 100, freq_tresh))
-            return False
-        else:
-            return True
+    total=sum(barcodes.values())
+    count, bar = max((v, k) for k, v in barcodes.items())
+    if total * freq_tresh / 100<count:
+        logger.warn("The most frequent barcode of lane {} ({}) found in {} represents {}%, "
+                "which is over the threshold of {}%".format(lane, bar, fastqfile, count / total * 100, freq_tresh))
+        return False
+    else:
+        return True
 
 
 

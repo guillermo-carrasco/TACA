@@ -7,6 +7,14 @@ import logging
 from bs4 import BeautifulSoup #html parser
 
 class XTenParser(object):
+    """Parses an xten run files. It generates data for statusdb
+    notable attributes :
+    
+    :XTenRunInfoParser runinfo: see XTenRunInfo
+    :XTenRunParametersParser runparameters: see XTenRunParametersParser
+    :XTenSampleSheetParser samplesheet: see XTenSampleSheetParser
+    :XTenLaneBarcodeParser lanebarcodes: see XTenLaneBarcodeParser
+    """
     def __init__(self, path):
         if os.path.exists(path):
             self.log=logging.getLogger(__name__)
@@ -17,6 +25,7 @@ class XTenParser(object):
             raise os.error("XTen flowcell cannot be found at {0}".format(path))
 
     def parse(self):
+        """Tries to parse as many files as possible from a run folder"""
         fc_name=self.path[-9:]
         rinfo_path=os.path.join(self.path, 'RunInfo.xml')
         rpar_path=os.path.join(self.path, 'runParameters.xml')
