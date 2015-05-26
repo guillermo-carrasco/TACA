@@ -71,7 +71,7 @@ def get_workable_lanes(run, status):
     """
     lanes=[]
     pattern=re.compile('L00([0-9])')
-    for unde in glob.glob(os.path.join(run, dmux_folder, 'Undetermined_*')):
+    for unde in glob.glob(os.path.join(run, dmux_folder, '*Undetermined_*')):
         name=os.path.basename(unde)
         lanes.append(int(pattern.search(name).group(1)))
     lanes=list(set(lanes))
@@ -83,7 +83,7 @@ def get_workable_lanes(run, status):
 
 
 def link_undet_to_sample(run, lane, path_per_lane):
-    """symlinks the undetermined file to the right sample folder
+    """symlinks the undetermined file to the right sample folder with a RELATIVE path so it's carried over by rsync
     
     :param run: path of the flowcell
     :type run: str
@@ -93,8 +93,9 @@ def link_undet_to_sample(run, lane, path_per_lane):
     :type path_per_lane: dict"""
     for fastqfile in glob.glob(os.path.join(run, dmux_folder, '*Undetermined_*_L00{}_*'.format(lane))):
         if not os.path.exists(os.path.join(path_per_lane[lane], os.path.basename(fastqfile))):
+            fqbname=os.path.basename(fastqfile)
             logger.info("linking file {} to {}".format(fastqfile, path_per_lane[lane]))
-            os.symlink(fastqfile, os.path.join(path_per_lane[lane], os.path.basename(fastqfile)))
+            os.symlink(os.path.join('..','..',fqbname), os.path.join(path_per_lane[lane], os.path.basename(fastqfile)))
 
 def save_index_count(barcodes, run, lane):
     """writes the barcode counts
