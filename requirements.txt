@@ -3,3 +3,5 @@ requests
 pyyaml
 statusdb
 beautifulsoup4
+-e git://github.com/Galithil/flowcell_parser.git
+flowcell_parser

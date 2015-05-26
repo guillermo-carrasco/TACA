@@ -15,7 +15,7 @@ from taca.illumina import Run
 from taca.utils.filesystem import chdir, control_fastq_filename
 from taca.utils.config import CONFIG
 from taca.utils import misc
-from taca.illumina.flowcell_parser.classes import XTenSampleSheetParser
+from flowcell_parser.classes import XTenSampleSheetParser
 
 logger = logging.getLogger(__name__)
 

@@ -4,7 +4,7 @@ import gzip
 import glob
 import os
 import logging
-import taca.illumina.flowcell_parser.classes as cl
+import flowcell_parser.classes as cl
 from taca.utils.config import CONFIG
 
 logger=logging.getLogger(__name__)
@@ -34,11 +34,17 @@ def check_undetermined_status(run, und_tresh=10, q30_tresh=80, freq_tresh=40, st
         workable_lanes=get_workable_lanes(run, status)
         for lane in workable_lanes:
             if is_unpooled_lane(ss,lane):
-               if check_index_freq(run,lane, freq_tresh):
-                    if lb and first_qc_check(lane,lb, und_tresh, q30_tresh):
-                        rename_undet(run, lane, samples_per_lane)
-                        link_undet_to_sample(run, lane, path_per_lane)
-            else:
+                if check_index_freq(run,lane, freq_tresh):
+                    if lb :
+                        if first_qc_check(lane,lb, und_tresh, q30_tresh):
+                            rename_undet(run, lane, samples_per_lane)
+                            link_undet_to_sample(run, lane, path_per_lane)
+                        else:
+                            logger.warn("lane {} did not pass the qc checks, the Undetermined will not be added.".format(lane))
+                    else:
+                        logger.info("The HTML report is not available yet, will wait.")
+
+             else:
                 logger.warn("The lane {}  has been multiplexed, according to the samplesheet and will be skipped.".format(lane))
 
     else:
