@@ -1,7 +1,5 @@
 click
 requests
 pyyaml
-mock
 statusdb
-ngi_pipeline
 beautifulsoup4
