@@ -73,7 +73,7 @@ def transfer_run(run, analysis=True):
     try:
         misc.call_external_command(command_line, with_log_files=True)
     except subprocess.CalledProcessError as exception:
-        os.remove('transferring')
+        os.remove(os.path.join(run, 'transferring'))
         raise exception
 
     t_file = os.path.join(CONFIG['analysis']['status_dir'], 'transfer.tsv')
