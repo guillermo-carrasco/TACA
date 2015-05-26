@@ -54,11 +54,15 @@ def rename_undet(run, lane, samples_per_lane):
     :param samples_per_lane: lane:sample dict
     :type status: dict
     """
-    for file in glob.glob(os.path.join(run, dmux_folder, "Undetermined*L00{}*".format(lane))):
+    for file in glob.glob(os.path.join(run, dmux_folder, "Undetermined*L0?{}*".format(lane))):
         old_name=os.path.basename(file)
         old_name_comps=old.name.split("_")
         old_name_comps[1]=old_name_comps[0]# replace S0 with Undetermined
         old_name_comps[0]=samples_per_lane[lane]#replace Undetermined with samplename
+        for index, comp in enumerate(old_name_comps):
+            if comp.startswith('L00'):
+                old_name_comps[index]=comp.replace('L00','L01')#adds a 1 as the second lane number in order to differentiate undetermined from normal in piper
+                
         new_name="_".join(old_name_comps)
         logger.info("Renaming {} to {}".format(file, os.path.join(os.path.dirname(file), new_name)))
         os.rename(file, os.path.join(os.path.dirname(file), new_name))
@@ -74,7 +78,7 @@ def get_workable_lanes(run, status):
     :returns:: list of lanes having an undetermined fastq file
     """
     lanes=[]
-    pattern=re.compile('L00([0-9])')
+    pattern=re.compile('L0[0,1]([0-9])')
     for unde in glob.glob(os.path.join(run, dmux_folder, '*Undetermined_*')):
         name=os.path.basename(unde)
         lanes.append(int(pattern.search(name).group(1)))
@@ -82,7 +86,7 @@ def get_workable_lanes(run, status):
     if status =='IN_PROGRESS': 
         #the last lane is the one that is currently being worked on by bcl2fastq, don't work on it.
         lanes=lanes[:-1]
-    logger.info("going to work with lanes {}".format(lanes))
+    logger.info("post_demux processing will happen with lanes {}".format(lanes))
     return lanes
 
 
@@ -95,7 +99,7 @@ def link_undet_to_sample(run, lane, path_per_lane):
     :type lane: int
     :param path_per_lane: {lane:path/to/the/sample}
     :type path_per_lane: dict"""
-    for fastqfile in glob.glob(os.path.join(run, dmux_folder, '*Undetermined_*_L00{}_*'.format(lane))):
+    for fastqfile in glob.glob(os.path.join(run, dmux_folder, '*Undetermined_*_L0?{}_*'.format(lane))):
         if not os.path.exists(os.path.join(path_per_lane[lane], os.path.basename(fastqfile))):
             fqbname=os.path.basename(fastqfile)
             logger.info("linking file {} to {}".format(fastqfile, path_per_lane[lane]))
@@ -135,7 +139,7 @@ def check_index_freq(run, lane, freq_tresh):
 
     else:
         open(os.path.join(run, dmux_folder,'index_count_L{}.tsv'.format(lane)), 'a').close()
-        for fastqfile in glob.glob(os.path.join(run, dmux_folder, 'Undetermined_*_L00{}_R1*'.format(lane))):
+        for fastqfile in glob.glob(os.path.join(run, dmux_folder, 'Undetermined_*_L0?{}_R1*'.format(lane))):
             logger.info("working on {}".format(fastqfile))
             zcat=subprocess.Popen(['zcat', fastqfile], stdout=subprocess.PIPE)
             sed=subprocess.Popen(['sed', '-n', "1~4p"],stdout=subprocess.PIPE, stdin=zcat.stdout)
