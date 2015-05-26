@@ -55,7 +55,11 @@ def rename_undet(run, lane, samples_per_lane):
     :type status: dict
     """
     for file in glob.glob(os.path.join(run, dmux_folder, "Undetermined*L00{}*".format(lane))):
-        new_name="{}_{}".format(samples_per_lane[lane],os.path.basename(file))
+        old_name=os.path.basename(file)
+        old_name_comps=old.name.split("_")
+        old_name_comps[1]=old_name_comps[0]# replace S0 with Undetermined
+        old_name_comps[0]=samples_per_lane[lane]#replace Undetermined with samplename
+        new_name="_".join(old_name_comps)
         logger.info("Renaming {} to {}".format(file, os.path.join(os.path.dirname(file), new_name)))
         os.rename(file, os.path.join(os.path.dirname(file), new_name))
 def get_workable_lanes(run, status):
