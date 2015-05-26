@@ -50,45 +50,44 @@ def transfer_run(run, analysis=True):
     :param str run: Run directory
     :param bool analysis: Trigger analysis on remote server
     """
-    with chdir(run):
-        command_line = ['rsync', '-av']
-        # Add R/W permissions to the group
-        command_line.append('--chmod=g+rw')
-        # rsync works in a really funny way, if you don't understand this, refer to
-        # this note: http://silentorbit.com/notes/2013/08/rsync-by-extension/
-        command_line.append("--include=*/")
-        for to_include in CONFIG['analysis']['analysis_server']['sync']['include']:
-            command_line.append("--include={}".format(to_include))
-        command_line.extend(["--exclude=*", "--prune-empty-dirs"])
-        r_user = CONFIG['analysis']['analysis_server']['user']
-        r_host = CONFIG['analysis']['analysis_server']['host']
-        r_dir = CONFIG['analysis']['analysis_server']['sync']['data_archive']
-        remote = "{}@{}:{}".format(r_user, r_host, r_dir)
-        command_line.extend([run, remote])
+    command_line = ['rsync', '-av']
+    # Add R/W permissions to the group
+    command_line.append('--chmod=g+rw')
+    # rsync works in a really funny way, if you don't understand this, refer to
+    # this note: http://silentorbit.com/notes/2013/08/rsync-by-extension/
+    command_line.append("--include=*/")
+    for to_include in CONFIG['analysis']['analysis_server']['sync']['include']:
+        command_line.append("--include={}".format(to_include))
+    command_line.extend(["--exclude=*", "--prune-empty-dirs"])
+    r_user = CONFIG['analysis']['analysis_server']['user']
+    r_host = CONFIG['analysis']['analysis_server']['host']
+    r_dir = CONFIG['analysis']['analysis_server']['sync']['data_archive']
+    remote = "{}@{}:{}".format(r_user, r_host, r_dir)
+    command_line.extend([run, remote])
 
-        # Create temp file indicating that the run is being transferred
-        open('transferring', 'w').close()
-        started = ("Started transfer of run {} on {}"
-                   .format(os.path.basename(run), datetime.now()))
-        logger.info(started)
-        # In this particular case we want to capture the exception because we want
-        # to delete the transfer file
-        try:
-            misc.call_external_command(command_line, with_log_files=True)
-        except subprocess.CalledProcessError as exception:
-            os.remove('transferring')
-            raise exception
-
-        t_file = os.path.join(CONFIG['analysis']['status_dir'], 'transfer.tsv')
-        logger.info('Adding run {} to {}'
-                    .format(os.path.basename(run), t_file))
-        with open(t_file, 'a') as tranfer_file:
-            tsv_writer = csv.writer(tranfer_file, delimiter='\t')
-            tsv_writer.writerow([os.path.basename(run), str(datetime.now())])
+    # Create temp file indicating that the run is being transferred
+    open('transferring', 'w').close()
+    started = ("Started transfer of run {} on {}"
+               .format(os.path.basename(run), datetime.now()))
+    logger.info(started)
+    # In this particular case we want to capture the exception because we want
+    # to delete the transfer file
+    try:
+        misc.call_external_command(command_line, with_log_files=True)
+    except subprocess.CalledProcessError as exception:
         os.remove('transferring')
+        raise exception
 
-        if analysis:
-            trigger_analysis(run)
+    t_file = os.path.join(CONFIG['analysis']['status_dir'], 'transfer.tsv')
+    logger.info('Adding run {} to {}'
+                .format(os.path.basename(run), t_file))
+    with open(t_file, 'a') as tranfer_file:
+        tsv_writer = csv.writer(tranfer_file, delimiter='\t')
+        tsv_writer.writerow([os.path.basename(run), str(datetime.now())])
+    os.remove('transferring')
+
+    if analysis:
+        trigger_analysis(run)
 
 
 def trigger_analysis(run_id):
