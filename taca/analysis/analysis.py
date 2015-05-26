@@ -327,10 +327,19 @@ def run_preprocessing(run):
             # even more specific like cycle or something
             logger.info('Run {} is not finished yet'.format(run.id))
 
+    data_dirs = CONFIG.get('analysis').get('data_dirs')
     if run:
-        _process(Run(run))
+        run_dir = None if not os.path.isabs(run) else run
+        if not run_dir:
+            for data_dir in data_dirs:
+                if os.path.exists(os.path.join(data_dir, run)):
+                    run_dir = os.path.join(data_dir, run)
+                    break
+        if run_dir:
+            _process(Run(run))
+        else:
+            raise RuntimeError("Run {} not found in {}".format(run, ', '.join(data_dirs)))
     else:
-        data_dirs = CONFIG.get('analysis').get('data_dirs')
         for data_dir in data_dirs:
             runs = glob.glob(os.path.join(data_dir, '1*XX'))
             for _run in runs:
