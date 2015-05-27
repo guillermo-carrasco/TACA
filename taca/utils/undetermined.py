@@ -10,7 +10,7 @@ from taca.utils.config import CONFIG
 logger=logging.getLogger(__name__)
 dmux_folder='Demultiplexing'
 
-def check_undetermined_status(run, und_tresh=10, q30_tresh=75, freq_tresh=40, pooled_tresh=5, status='COMPLETED'):
+def check_undetermined_status(run, und_tresh=10, q30_tresh=75, freq_tresh=40, pooled_tresh=5, dex_status='COMPLETED'):
     """Will check for undetermined fastq files, and perform the linking to the sample folder if the
     quality thresholds are met.
 
@@ -38,7 +38,7 @@ def check_undetermined_status(run, und_tresh=10, q30_tresh=75, freq_tresh=40, po
         lb=xtp.lanebarcodes
         path_per_lane=get_path_per_lane(run, ss)
         samples_per_lane=get_samples_per_lane(ss)
-        workable_lanes=get_workable_lanes(run, status)
+        workable_lanes=get_workable_lanes(run, dex_status)
         for lane in workable_lanes:
             if is_unpooled_lane(ss,lane):
                 if check_index_freq(run,lane, freq_tresh):
