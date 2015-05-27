@@ -221,7 +221,7 @@ def run_preprocessing(run):
                 logger.info(("BCL conversion and demultiplexing process in "
                              "progress for run {}, skipping it"
                              .format(run.id)))
-                ud.check_undetermined_status(run.run_dir, status=run.status, und_tresh=CONFIG['analysis']['undetermined']['lane_treshold'],
+                ud.check_undetermined_status(run.run_dir, dex_status=run.status, und_tresh=CONFIG['analysis']['undetermined']['lane_treshold'],
                     q30_tresh=CONFIG['analysis']['undetermined']['q30_treshold'], freq_tresh=CONFIG['analysis']['undetermined']['highest_freq'],
                     pooled_tresh=CONFIG['analysis']['undetermined']['pooled_und_treshold'])
             elif run.status == 'COMPLETED':
@@ -230,7 +230,7 @@ def run_preprocessing(run):
                              "otherwise".format(run.id)))
 
                 control_fastq_filename(os.path.join(run.run_dir, CONFIG['analysis']['bcl2fastq']['options'][0]['output-dir']))
-                passed_qc=ud.check_undetermined_status(run.run_dir, status=run.status, und_tresh=CONFIG['analysis']['undetermined']['lane_treshold'],
+                passed_qc=ud.check_undetermined_status(run.run_dir, dex_status=run.status, und_tresh=CONFIG['analysis']['undetermined']['lane_treshold'],
                     q30_tresh=CONFIG['analysis']['undetermined']['q30_treshold'], freq_tresh=CONFIG['analysis']['undetermined']['highest_freq'],
                     pooled_tresh=CONFIG['analysis']['undetermined']['pooled_und_treshold'])
                 qc_file = os.path.join(CONFIG['analysis']['status_dir'], 'qc.tsv')
