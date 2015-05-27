@@ -204,9 +204,9 @@ def upload_to_statusdb(run_dir):
     
      :param string run_dir: the run directory to upload
     """
-    couch = fcpdb.setupServer(CONF)
-    db=couch[CONF['statusdb']['xten_db']]
-    parser=cl.XTenParser(args.flowcell)
+    couch = fcpdb.setupServer(CONFIG)
+    db=couch[CONFIG['statusdb']['xten_db']]
+    parser=XTenParser(run_dir)
     fcpdb.update_doc(db,parser.obj)
 
 def run_preprocessing(run):
