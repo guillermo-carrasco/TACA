@@ -3,4 +3,4 @@ requests
 pyyaml
 statusdb
 flowcell_parser
-beautiful-soup
+beautifulsoup4
