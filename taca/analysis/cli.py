@@ -13,13 +13,13 @@ def analysis():
 @analysis.command()
 @click.option('-r', '--run', type=click.Path(exists=True), default=None,
 				 help='Demultiplex only a particular run')
-def demultiplex(run):
+def demultiplex(run=None):
 	""" Demultiplex all runs present in the data directories
 	"""
 	an.run_preprocessing(run)
 
 @analysis.command()
-@click.argument('run')
-def transfer(run):
+@click.argument('rundir')
+def transfer(rundir):
     """Transfers the run without qc"""
-    an.transfer_run(run)
+    an.transfer_run(rundir)
