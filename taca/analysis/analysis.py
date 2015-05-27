@@ -15,7 +15,8 @@ from taca.illumina import Run
 from taca.utils.filesystem import chdir, control_fastq_filename
 from taca.utils.config import CONFIG
 from taca.utils import misc
-from flowcell_parser.classes import XTenSampleSheetParser
+from flowcell_parser.classes import XTenSampleSheetParser, 
+from flowcell_parser.import db as fcpdb
 
 logger = logging.getLogger(__name__)
 
@@ -197,6 +198,16 @@ def post_qc(run, qc_file, status):
                 misc.send_mail(sj, cnt, rcp)
                 f.write("{}\tFAILED".format(os.path.basename(run)))
 
+def upload_to_statusdb(run_dir):
+    """
+    Triggers the upload to statusdb using the dependency flowcell_parser
+    
+     :param string run_dir: the run directory to upload
+    """
+    couch = fcpdb.setupServer(CONF)
+    db=couch[CONF['statusdb']['xten_db']]
+    parser=cl.XTenParser(args.flowcell)
+    fcpdb.update_doc(db,parser.obj)
 
 def run_preprocessing(run):
     """Run demultiplexing in all data directories
@@ -236,9 +247,7 @@ def run_preprocessing(run):
                 qc_file = os.path.join(CONFIG['analysis']['status_dir'], 'qc.tsv')
 
                 post_qc(run.run_dir, qc_file, passed_qc)
-
-
-
+                upload_to_statusdb(run.run_dir)
 
                 t_file = os.path.join(CONFIG['analysis']['status_dir'], 'transfer.tsv')
                 transferred = is_transferred(run.run_dir, t_file)
