@@ -6,6 +6,7 @@ import os
 import re
 import subprocess
 import taca.utils.undetermined as ud
+import flowcell_parser.db as fcpdb
 
 from datetime import datetime
 
@@ -15,8 +16,7 @@ from taca.illumina import Run
 from taca.utils.filesystem import chdir, control_fastq_filename
 from taca.utils.config import CONFIG
 from taca.utils import misc
-from flowcell_parser.classes import XTenSampleSheetParser, 
-from flowcell_parser.import db as fcpdb
+from flowcell_parser.classes import XTenSampleSheetParser,XTenParser 
 
 logger = logging.getLogger(__name__)
 
