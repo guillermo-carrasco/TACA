@@ -167,6 +167,35 @@ def prepare_sample_sheet(run):
 
 
 
+def post_qc(run, qc_file, status):
+    """ Checks wether a run has passed the final qc.
+
+    :param str run: Run directory
+    :param str qc_file: Path to file with information about transferred runs
+    """
+    already_seen=False
+    with open(qc_file, 'ab+') as f:
+        f.seek(0)
+        for row in f:
+            #Rows have two columns: run and transfer date
+            if row.split('\t')[0] == os.path.basename(run): 
+                already_seen=True
+
+        if not already_seen:
+            if status:
+                f.write("{}\tPASSED".format(os.path.basename(run)))
+            else:
+                sj="{} failed QC".format(os.path.basename(run))
+                cnt="""The run {run} has failed qc and will NOT be transfered to Nestor.
+                       
+                       To read the logs, run the following command on {server} 
+                       grep -A30 "Checking run {run}" {log}
+                       
+                       To force the transfer : 
+                        taca analysis transfer {rundir} """.format(run=os.path.basename(run), log=CONFIG['log']['file'], server=os.uname()[1], rundir=run)
+                rcp=CONFIG['mail']['recipients']
+                misc.send_mail(sj, cnt, rcp)
+                f.write("{}\tFAILED".format(os.path.basename(run)))
 
 
 def run_preprocessing(run):
@@ -193,30 +222,42 @@ def run_preprocessing(run):
                              "progress for run {}, skipping it"
                              .format(run.id)))
                 ud.check_undetermined_status(run.run_dir, status=run.status, und_tresh=CONFIG['analysis']['undetermined']['lane_treshold'],
-                   q30_tresh=CONFIG['analysis']['undetermined']['q30_treshold'], freq_tresh=CONFIG['analysis']['undetermined']['highest_freq'])
+                    q30_tresh=CONFIG['analysis']['undetermined']['q30_treshold'], freq_tresh=CONFIG['analysis']['undetermined']['highest_freq'],
+                    pooled_tresh=CONFIG['analysis']['undetermined']['pooled_und_treshold'])
             elif run.status == 'COMPLETED':
                 logger.info(("Preprocessing of run {} is finished, check if "
                              "run has been transferred and transfer it "
                              "otherwise".format(run.id)))
 
                 control_fastq_filename(os.path.join(run.run_dir, CONFIG['analysis']['bcl2fastq']['options'][0]['output-dir']))
-                ud.check_undetermined_status(run.run_dir, status=run.status, und_tresh=CONFIG['analysis']['undetermined']['lane_treshold'],
-                   q30_tresh=CONFIG['analysis']['undetermined']['q30_treshold'], freq_tresh=CONFIG['analysis']['undetermined']['highest_freq'])
+                passed_qc=ud.check_undetermined_status(run.run_dir, status=run.status, und_tresh=CONFIG['analysis']['undetermined']['lane_treshold'],
+                    q30_tresh=CONFIG['analysis']['undetermined']['q30_treshold'], freq_tresh=CONFIG['analysis']['undetermined']['highest_freq'],
+                    pooled_tresh=CONFIG['analysis']['undetermined']['pooled_und_treshold'])
+                qc_file = os.path.join(CONFIG['analysis']['status_dir'], 'qc.tsv')
+
+                post_qc(run.run_dir, qc_file, passed_qc)
+
+
+
+
                 t_file = os.path.join(CONFIG['analysis']['status_dir'], 'transfer.tsv')
                 transferred = is_transferred(run.run_dir, t_file)
-                #####TESTING THINGY
-                transferred=True
-                ######
-                if not transferred:
-                    logger.info("Run {} hasn't been transferred yet."
-                                .format(run.id))
-                    logger.info('Transferring run {} to {} into {}'
-                                .format(run.id,
-                        CONFIG['analysis']['analysis_server']['host'],
-                        CONFIG['analysis']['analysis_server']['sync']['data_archive']))
-                    transfer_run(run.run_dir)
+                if passed_qc:
+                    if not transferred:
+                        logger.info("Run {} hasn't been transferred yet."
+                                    .format(run.id))
+                        logger.info('Transferring run {} to {} into {}'
+                                    .format(run.id,
+                            CONFIG['analysis']['analysis_server']['host'],
+                            CONFIG['analysis']['analysis_server']['sync']['data_archive']))
+                        transfer_run(run.run_dir)
+                    else:
+                        logger.info('Run {} already transferred to analysis server, skipping it'.format(run.id))
                 else:
-                    logger.info('Run {} already transferred to analysis server, skipping it'.format(run.id))
+                    logger.warn('Run {} failed qc, transferring will not take place'.format(run.id))
+                    r_file = os.path.join(CONFIG['analysis']['status_dir'], 'report.out')
+
+
 
         if not run.is_finished():
             # Check status files and say i.e Run in second read, maybe something

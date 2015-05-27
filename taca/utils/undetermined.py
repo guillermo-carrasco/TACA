@@ -8,10 +8,9 @@ import flowcell_parser.classes as cl
 from taca.utils.config import CONFIG
 
 logger=logging.getLogger(__name__)
-#dmux_folder=CONFIG['analysis']['bcl2fastq']['options']['output_dir']
 dmux_folder='Demultiplexing'
 
-def check_undetermined_status(run, und_tresh=10, q30_tresh=80, freq_tresh=40, status='COMPLETED'):
+def check_undetermined_status(run, und_tresh=10, q30_tresh=75, freq_tresh=40, pooled_tresh=5, status='COMPLETED'):
     """Will check for undetermined fastq files, and perform the linking to the sample folder if the
     quality thresholds are met.
 
@@ -24,7 +23,15 @@ def check_undetermined_status(run, und_tresh=10, q30_tresh=80, freq_tresh=40, st
     :param freq_tresh: highest allowed percentage of the most common undetermined index
     :type freq_tresh: float:w
 
+    :returns boolean: True  if the flowcell passes the checks, False otherwise
     """
+    global dmux_folder
+    try:
+        dmux_folder=CONFIG['analysis']['bcl2fastq']['options'][0]['output_dir']
+    except KeyError:
+        dmux_folder='Demultiplexing'
+
+    status=False
     if os.path.exists(os.path.join(run, dmux_folder)):
         xtp=cl.XTenParser(run)
         ss=xtp.samplesheet
@@ -39,16 +46,40 @@ def check_undetermined_status(run, und_tresh=10, q30_tresh=80, freq_tresh=40, st
                         if first_qc_check(lane,lb, und_tresh, q30_tresh):
                             rename_undet(run, lane, samples_per_lane)
                             link_undet_to_sample(run, lane, path_per_lane)
+                            status=True
                         else:
                             logger.warn("lane {} did not pass the qc checks, the Undetermined will not be added.".format(lane))
+                            status=False
                     else:
                         logger.info("The HTML report is not available yet, will wait.")
-
-             else:
+                else:
+                    logger.warn("lane {} did not pass the qc checks, the Undetermined will not be added.".format(lane))
+                    status=False
+            else:
+                if lb and qc_for_pooled_lane(lane,lb,pooled_tresh):
+                    return True
                 logger.warn("The lane {}  has been multiplexed, according to the samplesheet and will be skipped.".format(lane))
-
     else:
         logger.warn("No demultiplexing folder found, aborting")
+
+    return status
+
+def qc_for_pooled_lane(lane,lb , und_thresh):
+    d={}
+    for entry in lb.sample_data:
+        if lane == int(entry['Lane']):
+            if entry.get('Sample')!='unknown':
+                d['det']=int(entry['Clusters'].replace(',',''))
+            else:
+                d['undet']=int(entry['Clusters'].replace(',',''))
+
+
+    if d['undet'] > (d['det']+d['undet']) * und_tresh / 100:
+        logger.warn("Lane {} has more than {}% undetermined indexes ({}%)".format(lane, und_tresh,d['undet']/(d['det']+d['undet'])*100))
+        return False
+
+    
+
 
 def rename_undet(run, lane, samples_per_lane):
     """Renames the Undetermined fastq file by prepending the sample name in front of it
@@ -62,7 +93,7 @@ def rename_undet(run, lane, samples_per_lane):
     """
     for file in glob.glob(os.path.join(run, dmux_folder, "Undetermined*L0?{}*".format(lane))):
         old_name=os.path.basename(file)
-        old_name_comps=old.name.split("_")
+        old_name_comps=old_name.split("_")
         old_name_comps[1]=old_name_comps[0]# replace S0 with Undetermined
         old_name_comps[0]=samples_per_lane[lane]#replace Undetermined with samplename
         for index, comp in enumerate(old_name_comps):
@@ -195,21 +226,18 @@ def first_qc_check(lane, lb, und_tresh, q30_tresh):
     d={}
     for entry in lb.sample_data:
         if lane == int(entry['Lane']):
-            if entry.get('Sample')=='unknown':
+            if entry.get('Sample')!='unknown':
                 if float(entry['% >= Q30bases']) < q30_tresh:
-                    logger.warn("Undetermined indexes of lane {} has a percentage of bases over q30 of {}%," 
-                            "which is below the cutoff of {}% ".format(lane, float(entry['% >= Q30bases']), q30_tresh))
-                    return False
-                d['undet']=int(entry['Clusters'].replace(',',''))
-            else:
-                if float(entry['% >= Q30bases']) < q30_tresh:
-                    logger.warn("Undetermined indexes od lane {} has a percentage of bases over q30 of {}%, "
-                            "which is below the cutoff of {}% ".format(lane, float(entry['% >= Q30bases']), q30_tresh))
+                    logger.warn("Sample {} of lane {} has a percentage of bases over q30 of {}%, "
+                            "which is below the cutoff of {}% ".format(entry['Sample'], lane, float(entry['% >= Q30bases']), q30_tresh))
                     return False
                 d['det']=int(entry['Clusters'].replace(',',''))
+            else:
+                d['undet']=int(entry['Clusters'].replace(',',''))
 
-    if d['undet'] > d['det']+d['undet'] * und_tresh / 100:
-        logger.warn("Lane {} has more than {}% undetermined indexes ({}%)".format(lane, und_tresh,d['undet']/(d['det']+d['undet'])*100))
+
+    if d['undet'] > (d['det']+d['undet']) * und_tresh / 100:
+        logger.warn("Lane {} has more than {}% undetermined indexes ({:.2f}%)".format(lane, und_tresh,float(d['undet'])/(d['det']+d['undet'])*100))
         return False
 
     return True

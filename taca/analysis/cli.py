@@ -17,3 +17,9 @@ def demultiplex(run):
 	""" Demultiplex all runs present in the data directories
 	"""
 	an.run_preprocessing(run)
+
+@analysis.command()
+@click.argument('run')
+def transfer(run):
+    """Transfers the run without qc"""
+    an.transfer_run(run)
