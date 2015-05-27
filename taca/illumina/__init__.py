@@ -31,8 +31,8 @@ class Run(object):
         if not os.path.exists(run_dir) or not \
                 os.path.exists(os.path.join(run_dir, 'runParameters.xml')):
             raise RuntimeError('Could not locate run directory {}'.format(run_dir))
-        self.run_dir = run_dir
-        self.id = os.path.basename(run_dir)
+        self.run_dir = os.path.normpath(run_dir)
+        self.id = os.path.basename(os.path.normpath(run_dir))
         self._extract_run_info()
 
 
