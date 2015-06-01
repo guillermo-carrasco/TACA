@@ -136,7 +136,7 @@ def link_undet_to_sample(run, lane, path_per_lane):
     :type lane: int
     :param path_per_lane: {lane:path/to/the/sample}
     :type path_per_lane: dict"""
-    for fastqfile in glob.glob(os.path.join(run, dmux_folder, '*Undetermined_*_L0?{}_*'.format(lane))):
+    for fastqfile in glob.glob(os.path.join(run, dmux_folder, '*Undetermined*_L0?{}_*'.format(lane))):
         if not os.path.exists(os.path.join(path_per_lane[lane], os.path.basename(fastqfile))):
             fqbname=os.path.basename(fastqfile)
             logger.info("linking file {} to {}".format(fastqfile, path_per_lane[lane]))
