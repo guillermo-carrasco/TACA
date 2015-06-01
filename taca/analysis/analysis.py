@@ -67,7 +67,11 @@ def transfer_run(run, analysis=True):
     command_line.extend([run, remote])
 
     # Create temp file indicating that the run is being transferred
-    open(os.path.join(run, 'transferring'), 'w').close()
+    try:
+        open(os.path.join(run, 'transferring'), 'w').close()
+    except IOError as e:
+        logger.error("Cannot create a file in {}. Check the run name, and the permissions.".format(run))
+        raise e
     started = ("Started transfer of run {} on {}"
                .format(os.path.basename(run), datetime.now()))
     logger.info(started)
@@ -105,7 +109,7 @@ def trigger_analysis(run_id):
                .format(host=CONFIG['analysis']['analysis_server']['host'],
                        port=CONFIG['analysis']['analysis_server']['port'],
                        dir=os.path.basename(run_id)))
-        params = {'path': CONFIG['analysis']['analysis_server']['data_archive']}
+        params = {'path': CONFIG['analysis']['analysis_server']['sync']['data_archive']}
         try:
             r = requests.get(url, params=params)
             if r.status_code != requests.status_codes.codes.OK:
