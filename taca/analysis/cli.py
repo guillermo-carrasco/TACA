@@ -24,3 +24,9 @@ def demultiplex(run):
 def transfer(rundir, analysis):
     """Transfers the run without qc"""
     an.transfer_run(rundir, analysis=analysis)
+
+@analysis.command()
+@click.argument('rundir')
+def save(rundir):
+    """saves the run to statusdb"""
+    an.upload_to_statusdb(rundir)
