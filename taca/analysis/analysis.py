@@ -16,7 +16,7 @@ from taca.illumina import Run
 from taca.utils.filesystem import chdir, control_fastq_filename
 from taca.utils.config import CONFIG
 from taca.utils import misc
-from flowcell_parser.classes import XTenRunParametersParser,XTenSampleSheetParser,XTenParser 
+from flowcell_parser.classes import XTenRunParametersParser,XTenSampleSheetParser,XTenParser
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +98,7 @@ def transfer_run(run, analysis=True):
         trigger_analysis(run)
 
 def archive_run(run):
-    
+
     rppath=os.path.join(run, 'runParameters.xml')
     try:
         rp=XTenRunParametersParser(os.path.join(run, 'runParameters.xml'))
@@ -119,7 +119,7 @@ def archive_run(run):
         elif "HiSeq" in runtype:
             destination=CONFIG['storage']['archive_dir']['HiSeq']
         else:
-            logger.warn("unrecognized runtype {}, cannot archive the run {}.".format(runtype, run)) 
+            logger.warn("unrecognized runtype {}, cannot archive the run {}.".format(runtype, run))
             destination=None
 
         if destination:
@@ -216,7 +216,7 @@ def post_qc(run, qc_file, status):
         f.seek(0)
         for row in f:
             #Rows have two columns: run and transfer date
-            if row.split('\t')[0] == runname: 
+            if row.split('\t')[0] == runname:
                 already_seen=True
 
         if not already_seen:
@@ -227,11 +227,11 @@ def post_qc(run, qc_file, status):
                 cnt="""The run {run} has failed qc and will NOT be transfered to Nestor.
 
                        The run might be available at : https://genomics-status.scilifelab.se/flowcells/{shortfc}
-                       
-                       To read the logs, run the following command on {server} 
+
+                       To read the logs, run the following command on {server}
                        grep -A30 "Checking run {run}" {log}
-                       
-                       To force the transfer : 
+
+                       To force the transfer :
                         taca analysis transfer {rundir} """.format(run=runname, shortfc=shortrun, log=CONFIG['log']['file'], server=os.uname()[1], rundir=run)
                 rcp=CONFIG['mail']['recipients']
                 misc.send_mail(sj, cnt, rcp)
@@ -240,7 +240,7 @@ def post_qc(run, qc_file, status):
 def upload_to_statusdb(run_dir):
     """
     Triggers the upload to statusdb using the dependency flowcell_parser
-    
+
      :param string run_dir: the run directory to upload
     """
     couch = fcpdb.setupServer(CONFIG)

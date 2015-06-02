@@ -12,17 +12,6 @@ from taca.utils.filesystem import chdir
 
 logger = logging.getLogger(__name__)
 
-def demultiplex_HiSeq(run):
-    """ Demultiplexing for HiSeq (V3/V4) runs
-    """
-    raise NotImplementedError('Meec! Demultiplexing for HiSeq (V3/V4) runs not implemented yet :-/')
-
-
-def demultiplex_MiSeq(run):
-    """ Demultiplexing for MiSeq runs
-    """
-    raise NotImplementedError('Meec! Demultiplexing for MiSeq runs not implemented yet :-/')
-
 
 class Run(object):
     """ Defines an Illumina run
@@ -91,6 +80,10 @@ class Run(object):
                         cl.extend(['--{}'.format(opt), str(val)])
                     else:
                         cl.append('--{}'.format(option))
+
+            # For CASAVA 1.8, i.e [H/M]iSeq runs, we need to run also the make command
+            # to start the actual demultiplexing
+
 
             logger.info(("BCL to FASTQ conversion and demultiplexing started for "
                          " run {} on {}".format(os.path.basename(self.id), datetime.now())))
