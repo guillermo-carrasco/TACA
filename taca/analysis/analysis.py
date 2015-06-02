@@ -162,8 +162,23 @@ def trigger_analysis(run_id):
                          "of {}. Please check the logfile and make sure to "
                          "start the analysis!".format(os.path.basename(run_id))))
 
+def find_samplesheet(run):
+    """Find the samplesheet for the given run
 
-def prepare_sample_sheet(run):
+    :param taca.illumina.Run run: Run to find the SampleSheet for
+    :returns str: Path to the SampleSheet
+    """
+    if run.run_type == 'MiSeq':
+        return os.path.join(run.run_dir, 'Data', 'Intensities', 'BaseCalls', 'SampleSheet.csv')
+    else:
+        current_year = '20' + run.id[0:2]
+        samplesheets_dir = os.path.join(CONFIG['analysis']['samplesheets_dir'],
+                                        current_year)
+        FC_ID = parsers.get_flowcell_id(run.run_dir)
+        return os.path.join(samplesheets_dir, current_year, '{}.csv'.format(FC_ID))
+
+
+def prepare_x10_sample_sheet(run, ss_origin=None):
     """ This is a temporary function in order to solve the current problem with LIMS system
         not able to generate a compatible samplesheet for HiSeqX. This function needs to massage
         the sample sheet created by GenoLogics in order to correctly demultiplex HiSeqX runs.
@@ -171,20 +186,15 @@ def prepare_sample_sheet(run):
         this flowcell will not be processed.
 
         :param str run: Run directory
+        :param str ss_origin: Path to the SampleSheet for this run in the filesystem
     """
     #start by checking if samplesheet is in the correct place
     run_name = os.path.basename(run)
-    current_year = '20' + run_name[0:2]
-    samplesheets_dir = os.path.join(CONFIG['analysis']['samplesheets_dir'],
-                                    current_year)
-
-    run_name_componets = run_name.split("_")
     FCID = run_name_componets[3][1:]
 
-    FCID_samplesheet_origin = os.path.join(samplesheets_dir, FCID + '.csv')
-    FCID_samplesheet_dest   = os.path.join(run, "SampleSheet.csv")
+    FCID_samplesheet_dest = os.path.join(run, "SampleSheet.csv")
 
-    ss_reader=XTenSampleSheetParser(FCID_samplesheet_origin)
+    ss_reader=XTenSampleSheetParser(ss_origin)
     #check that the samplesheet is not already present
     if os.path.exists(FCID_samplesheet_dest):
         logger.warn(("When trying to generate SampleSheet.csv for sample "
@@ -267,7 +277,8 @@ def run_preprocessing(run):
                 logger.info(("Starting BCL to FASTQ conversion and "
                              "demultiplexing for run {}".format(run.id)))
                 # work around LIMS problem
-                if prepare_sample_sheet(run.run_dir):
+                samplesheet = find_samplesheet(run)
+                if prepare_x10_sample_sheet(run.run_dir, samplesheet):
                     run.demultiplex()
                     # Right after demultiplexing, move data to nosync directory
                     shutil.move(run.run_dir, os.path.join(os.path.basename(run.run_dir, 'nosync')))
