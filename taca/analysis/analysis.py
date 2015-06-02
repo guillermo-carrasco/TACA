@@ -5,6 +5,7 @@ import logging
 import os
 import re
 import subprocess
+import shutil
 import taca.utils.undetermined as ud
 import flowcell_parser.db as fcpdb
 
@@ -268,6 +269,8 @@ def run_preprocessing(run):
                 # work around LIMS problem
                 if prepare_sample_sheet(run.run_dir):
                     run.demultiplex()
+                    # Right after demultiplexing, move data to nosync directory
+                    shutil.move(run.run_dir, os.path.join(os.path.basename(run.run_dir, 'nosync')))
             elif run.status == 'IN_PROGRESS':
                 logger.info(("BCL conversion and demultiplexing process in "
                              "progress for run {}, skipping it"
