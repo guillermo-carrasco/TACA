@@ -237,6 +237,7 @@ def post_qc(run, qc_file, status):
                 misc.send_mail(sj, cnt, rcp)
                 f.write("{}\tFAILED\n".format(os.path.basename(run)))
 
+
 def upload_to_statusdb(run_dir):
     """
     Triggers the upload to statusdb using the dependency flowcell_parser

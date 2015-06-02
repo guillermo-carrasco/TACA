@@ -12,6 +12,8 @@ from taca.utils.filesystem import chdir
 
 logger = logging.getLogger(__name__)
 
+finished_run_indicator = CONFIG.get('storage', {}).get('finished_run_indicator',
+                                                       'RTAComplete.txt')
 
 class Run(object):
     """ Defines an Illumina run
@@ -54,7 +56,7 @@ class Run(object):
     def is_finished(self):
         """ Returns true if the run is finished, false otherwise
         """
-        return os.path.exists(os.path.join(self.run_dir, 'RTAComplete.txt'))
+        return os.path.exists(os.path.join(self.run_dir, finished_run_indicator))
 
 
     def demultiplex(self):
@@ -94,8 +96,9 @@ class Run(object):
 
     @property
     def status(self):
+        demux_suffix = CONFIG['analysis']['bcl2fastq']['options']['output-dir']
         if self.run_type == 'HiSeqX':
-            demux_dir = os.path.join(self.run_dir, 'Demultiplexing')
+            demux_dir = os.path.join(self.run_dir, demux_suffix)
             if not os.path.exists(demux_dir):
                 return 'TO_START'
             elif os.path.exists(os.path.join(demux_dir, 'Stats', 'DemultiplexingStats.xml')):
