@@ -1,5 +1,6 @@
 """ Submodule with Illumina-related code
 """
+import glob
 import logging
 import os
 
@@ -22,7 +23,7 @@ class Run(object):
         if not os.path.exists(run_dir) or not \
                 os.path.exists(os.path.join(run_dir, 'runParameters.xml')):
             raise RuntimeError('Could not locate run directory {}'.format(run_dir))
-        self.run_dir = os.path.normpath(run_dir)
+        self.run_dir = os.path.abspath(run_dir)
         self.id = os.path.basename(os.path.normpath(run_dir))
         self._extract_run_info()
 
@@ -96,12 +97,22 @@ class Run(object):
 
     @property
     def status(self):
-        demux_suffix = CONFIG['analysis']['bcl2fastq']['options']['output-dir']
+        _demux_dir = CONFIG['analysis']['bcl2fastq']['options']['output-dir']
         if self.run_type == 'HiSeqX':
-            demux_dir = os.path.join(self.run_dir, demux_suffix)
+            demux_dir = os.path.join(self.run_dir, _demux_dir)
             if not os.path.exists(demux_dir):
                 return 'TO_START'
             elif os.path.exists(os.path.join(demux_dir, 'Stats', 'DemultiplexingStats.xml')):
+                return 'COMPLETED'
+            else:
+                return 'IN_PROGRESS'
+        elif self.run_type == 'HiSeq' or self.run_type == 'MiSeq':
+            # Given how demultiplexing is implemented for [H/M]iSeq, the demux_dir
+            # will only be present at the end, when merging the resulting demux_dir_Xbp directories
+            demux_dir = os.path.join(self.run_dir, _demux_dir)
+            if not glob.glob('{}_*'.format(demux_dir)):
+                return 'TO_START'
+            elif os.path.exists(demux_dir):
                 return 'COMPLETED'
             else:
                 return 'IN_PROGRESS'
