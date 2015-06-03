@@ -278,35 +278,53 @@ def run_preprocessing(run):
                              "demultiplexing for run {}".format(run.id)))
                 # work around LIMS problem
                 samplesheet = find_samplesheet(run)
-                if prepare_x10_sample_sheet(run.run_dir, samplesheet):
+                if (run.run_type == 'HiSeqX' and prepare_x10_sample_sheet(run.run_dir, samplesheet)) \
+                        or run.run_type != 'HiSeqX':
                     run.demultiplex()
                     # Right after demultiplexing, move data to nosync directory
-                    shutil.move(run.run_dir, os.path.join(os.path.basename(run.run_dir, 'nosync')))
+                    shutil.move(run.run_dir, os.path.join(os.path.dirname(run.run_dir, 'nosync')))
             elif run.status == 'IN_PROGRESS':
                 logger.info(("BCL conversion and demultiplexing process in "
                              "progress for run {}, skipping it"
                              .format(run.id)))
-                ud.check_undetermined_status(run.run_dir, dex_status=run.status, und_tresh=CONFIG['analysis']['undetermined']['lane_treshold'],
-                    q30_tresh=CONFIG['analysis']['undetermined']['q30_treshold'], freq_tresh=CONFIG['analysis']['undetermined']['highest_freq'],
-                    pooled_tresh=CONFIG['analysis']['undetermined']['pooled_und_treshold'])
+                if run.run_type == 'HiSeqX':
+                    ud.check_undetermined_status(run.run_dir, dex_status=run.status, und_tresh=CONFIG['analysis']['undetermined']['lane_treshold'],
+                        q30_tresh=CONFIG['analysis']['undetermined']['q30_treshold'], freq_tresh=CONFIG['analysis']['undetermined']['highest_freq'],
+                        pooled_tresh=CONFIG['analysis']['undetermined']['pooled_und_treshold'])
             elif run.status == 'COMPLETED':
                 logger.info(("Preprocessing of run {} is finished, check if "
                              "run has been transferred and transfer it "
                              "otherwise".format(run.id)))
 
-                control_fastq_filename(os.path.join(run.run_dir, CONFIG['analysis']['bcl2fastq']['options'][0]['output-dir']))
-                passed_qc=ud.check_undetermined_status(run.run_dir, dex_status=run.status, und_tresh=CONFIG['analysis']['undetermined']['lane_treshold'],
-                    q30_tresh=CONFIG['analysis']['undetermined']['q30_treshold'], freq_tresh=CONFIG['analysis']['undetermined']['highest_freq'],
-                    pooled_tresh=CONFIG['analysis']['undetermined']['pooled_und_treshold'])
-                qc_file = os.path.join(CONFIG['analysis']['status_dir'], 'qc.tsv')
+                if run.run_type == 'HiSeqX':
+                    control_fastq_filename(os.path.join(run.run_dir, CONFIG['analysis']['bcl2fastq']['options'][0]['output-dir']))
+                    passed_qc=ud.check_undetermined_status(run.run_dir, dex_status=run.status, und_tresh=CONFIG['analysis']['undetermined']['lane_treshold'],
+                        q30_tresh=CONFIG['analysis']['undetermined']['q30_treshold'], freq_tresh=CONFIG['analysis']['undetermined']['highest_freq'],
+                        pooled_tresh=CONFIG['analysis']['undetermined']['pooled_und_treshold'])
+                    qc_file = os.path.join(CONFIG['analysis']['status_dir'], 'qc.tsv')
 
-                post_qc(run.run_dir, qc_file, passed_qc)
-                upload_to_statusdb(run.run_dir)
+                    post_qc(run.run_dir, qc_file, passed_qc)
+                    upload_to_statusdb(run.run_dir)
 
-                t_file = os.path.join(CONFIG['analysis']['status_dir'], 'transfer.tsv')
-                transferred = is_transferred(run.run_dir, t_file)
-                if passed_qc:
-                    if not transferred:
+                    t_file = os.path.join(CONFIG['analysis']['status_dir'], 'transfer.tsv')
+                    transferred = is_transferred(run.run_dir, t_file)
+                    if passed_qc:
+                        if not transferred:
+                            logger.info("Run {} hasn't been transferred yet."
+                                        .format(run.id))
+                            logger.info('Transferring run {} to {} into {}'
+                                        .format(run.id,
+                                CONFIG['analysis']['analysis_server']['host'],
+                                CONFIG['analysis']['analysis_server']['sync']['data_archive']))
+                            transfer_run(run.run_dir)
+                        else:
+                            logger.info('Run {} already transferred to analysis server, skipping it'.format(run.id))
+                    else:
+                        logger.warn('Run {} failed qc, transferring will not take place'.format(run.id))
+                        r_file = os.path.join(CONFIG['analysis']['status_dir'], 'report.out')
+                else:
+                    t_file = os.path.join(CONFIG['analysis']['status_dir'], 'transfer.tsv')
+                    if not is_transferred(run.run_dir, t_file):
                         logger.info("Run {} hasn't been transferred yet."
                                     .format(run.id))
                         logger.info('Transferring run {} to {} into {}'
@@ -316,11 +334,6 @@ def run_preprocessing(run):
                         transfer_run(run.run_dir)
                     else:
                         logger.info('Run {} already transferred to analysis server, skipping it'.format(run.id))
-                else:
-                    logger.warn('Run {} failed qc, transferring will not take place'.format(run.id))
-                    r_file = os.path.join(CONFIG['analysis']['status_dir'], 'report.out')
-
-
 
         if not run.is_finished():
             # Check status files and say i.e Run in second read, maybe something
