@@ -7,6 +7,7 @@ import os
 from datetime import datetime
 from xml.etree import ElementTree as ET
 
+from taca.illumina impot utils
 from taca.utils import misc
 from taca.utils.config import CONFIG
 from taca.utils.filesystem import chdir
@@ -15,6 +16,47 @@ logger = logging.getLogger(__name__)
 
 finished_run_indicator = CONFIG.get('storage', {}).get('finished_run_indicator',
                                                        'RTAComplete.txt')
+
+def _demultiplex_HiSeqX_flowcell(run):
+    """Specific method for demultiplexing a HiSeqX flowcell
+
+    :param taca.illumina.Run run: Run/flowcell to be demultiplexed
+    """
+    logger.info('Building bcl2fastq command')
+    config = CONFIG['analysis']
+    with chdir(self.run_dir):
+        cl = [config.get('bcl2fastq').get(self.run_type)]
+        if config['bcl2fastq'].has_key('options'):
+            cl_options = config['bcl2fastq']['options']
+
+            # Append all options that appear in the configuration file to the main command.
+            # Options that require a value, i.e --use-bases-mask Y8,I8,Y8, will be returned
+            # as a dictionary, while options that doesn't require a value, i.e --no-lane-splitting
+            # will be returned as a simple string
+            for option in cl_options:
+                if isinstance(option, dict):
+                    opt, val = option.popitem()
+                    cl.extend(['--{}'.format(opt), str(val)])
+                else:
+                    cl.append('--{}'.format(option))
+
+        logger.info(("BCL to FASTQ conversion and demultiplexing started for "
+                     " run {} on {}".format(os.path.basename(self.id), datetime.now())))
+
+        misc.call_external_command_detached(cl, with_log_files=True)
+
+
+def _demultiplex_flowcell(run):
+    """Sepecific method for demultiplexing a non-X10 flowcell, i.e [H/M]iSeq
+
+    :param taca.illumina.Run run: Run/flowcell to be demultiplexed
+    """
+    logger.info('Generating FASTQ files for run {}'.format(run.id))
+    demux_dirs = _run_casava(run.run_dir)
+    logger.info("Done generating fastq.gz files for {}".format(run.id))
+    # Merge demultiplexing results into a single Unaligned folder
+    utils.merge_demux_results(run.run_dir)
+
 
 class Run(object):
     """ Defines an Illumina run
@@ -66,33 +108,10 @@ class Run(object):
         Takes software (bcl2fastq version to use) and parameters from the configuration
         file.
         """
-        logger.info('Building bcl2fastq command')
-        config = CONFIG['analysis']
-        with chdir(self.run_dir):
-            cl = [config.get('bcl2fastq').get(self.run_type)]
-            if config['bcl2fastq'].has_key('options'):
-                cl_options = config['bcl2fastq']['options']
-
-                # Append all options that appear in the configuration file to the main command.
-                # Options that require a value, i.e --use-bases-mask Y8,I8,Y8, will be returned
-                # as a dictionary, while options that doesn't require a value, i.e --no-lane-splitting
-                # will be returned as a simple string
-                for option in cl_options:
-                    if isinstance(option, dict):
-                        opt, val = option.popitem()
-                        cl.extend(['--{}'.format(opt), str(val)])
-                    else:
-                        cl.append('--{}'.format(option))
-
-            # For CASAVA 1.8, i.e [H/M]iSeq runs, we need to run also the make command
-            # to start the actual demultiplexing
-
-
-            logger.info(("BCL to FASTQ conversion and demultiplexing started for "
-                         " run {} on {}".format(os.path.basename(self.id), datetime.now())))
-
-            misc.call_external_command_detached(cl, with_log_files=True)
-
+        if self.run_type == 'HiSeqX':
+            _demultiplex_HiSeqX_flowcell(self)
+        else:
+            _demultiplex_flowcell(self)
 
 
     @property
