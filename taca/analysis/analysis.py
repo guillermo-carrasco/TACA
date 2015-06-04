@@ -185,11 +185,11 @@ def prepare_sample_sheet(run_dir, run_type, ss_origin):
     :param str run_type: Type of the run, either HiSeq or MiSeq
     :param str ss_origin: Path for the location of the original SampleSheet for the run
     """
-    if run_type == 'HiSeq':
-        shutil.copy(ss_origin, run_dir)
-        return True
-    else:
-        return False
+    shutil.copy(ss_origin, run_dir)
+    if run_type == 'MiSeq':
+        miseq_ss = parser.MiSeqSampleSheet(os.path.basename(ss_origin))
+        miseq_ss.to_hiseq(parsers.get_flowcell_id(run_dir), write=True)
+    return True
 
 
 def prepare_x10_sample_sheet(run, ss_origin=None):
