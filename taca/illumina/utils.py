@@ -6,18 +6,18 @@ import os
 import shutil
 import xml.etree.ElementTree as ET
 
-import taca.utils
 
 from bs4 import BeautifulSoup
 from itertools import izip_longest
 
 from taca.utils import parsers
+from taca.utils import filesystem
 from taca.utils.config import CONFIG
 
 finished_run_indicator = CONFIG.get('storage', {}).get('finished_run_indicator',
                                                        'RTAComplete.txt')
 
-def _last_index_read(directory):
+def last_index_read(directory):
     """Parse the number of the highest index read from the RunInfo.xml
     """
     read_numbers = [int(read.get("Number", 0)) for read in parsers.get_read_configuration(directory) if read.get("IsIndexedRead", "") == "Y"]
@@ -204,7 +204,7 @@ def merge_demux_results(fc_dir):
     merged_dir = os.path.join(fc_dir, finished_run_indicator)
     merged_basecall_dir = os.path.join(merged_dir, basecall_dir)
     #Create the final Unaligned folder and copy there all configuration files
-    taca.utils.create_folder(os.path.join(merged_dir, basecall_dir))
+    filesystem.create_folder(os.path.join(merged_dir, basecall_dir))
     shutil.copy(os.path.join(unaligned_dirs[0], basecall_dir,
                     'Flowcell_demux_summary.xml'), merged_basecall_dir)
     shutil.copy(os.path.join(unaligned_dirs[0], basecall_dir,

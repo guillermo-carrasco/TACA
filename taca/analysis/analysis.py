@@ -175,7 +175,20 @@ def find_samplesheet(run):
         samplesheets_dir = os.path.join(CONFIG['analysis']['samplesheets_dir'],
                                         current_year)
         FC_ID = parsers.get_flowcell_id(run.run_dir)
-        return os.path.join(samplesheets_dir, current_year, '{}.csv'.format(FC_ID))
+        return os.path.join(samplesheets_dir, '{}.csv'.format(FC_ID))
+
+
+def prepare_sample_sheet(run_dir, run_type, ss_origin):
+    """Prepares a non-X10 samplesheet
+
+    :param str run_dir: Directory of the run
+    :param str run_type: Type of the run, either HiSeq or MiSeq
+    :param str ss_origin: Path for the location of the original SampleSheet for the run
+    """
+    if run_type == 'HiSeq':
+        shutil.copy(samplesheet, run.run_dir)
+    else:
+        raise NotImplementedError('This has not yet been implemented for {} runs'.format(run_type))
 
 
 def prepare_x10_sample_sheet(run, ss_origin=None):
@@ -279,7 +292,7 @@ def run_preprocessing(run):
                 # work around LIMS problem
                 samplesheet = find_samplesheet(run)
                 if (run.run_type == 'HiSeqX' and prepare_x10_sample_sheet(run.run_dir, samplesheet)) \
-                        or run.run_type != 'HiSeqX':
+                        or (run.run_type != 'HiSeqX' and prepare_sample_sheet(run.run_dir, run.run_type, samplesheet)):
                     run.demultiplex()
                     # Right after demultiplexing, move data to nosync directory
                     shutil.move(run.run_dir, os.path.join(os.path.dirname(run.run_dir, 'nosync')))

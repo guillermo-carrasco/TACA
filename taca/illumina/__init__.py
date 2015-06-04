@@ -46,17 +46,18 @@ def _run_casava_task(args):
 
     # Run configureBclToFastq
     with chdir(fc_dir):
-        cl = [config.get('bcl2fastq').get(self.run_type)]
+        cl = [config.get('bcl2fastq').get(args.get('run_type'))]
         if config['bcl2fastq'].has_key('options'):
             cl_options = config['bcl2fastq']['options']
 
             # Append all options that appear in the configuration file to the main command.
-            # Options that require a value, i.e --use-bases-mask Y8,I8,Y8, will be returned
-            # as a dictionary, while options that doesn't require a value, i.e --no-lane-splitting
-            # will be returned as a simple string
             for option in cl_options:
                 if isinstance(option, dict):
                     opt, val = option.popitem()
+                    # In the case of [H/M]iSeq the final output-dir will be maned with
+                    # a suffix which will be the length of the index
+                    if opt == 'output-dir':
+                        opt = demux_folder
                     cl.extend(['--{}'.format(opt), str(val)])
                 else:
                     cl.append('--{}'.format(option))
@@ -202,7 +203,6 @@ class Run(object):
         for option in CONFIG['analysis']['bcl2fastq']['options']:
             if isinstance(option, dict) and option.get('output-dir'):
                 _demux_dir = option.get('output-dir')
-        for
         if self.run_type == 'HiSeqX':
             demux_dir = os.path.join(self.run_dir, _demux_dir)
             if not os.path.exists(demux_dir):
