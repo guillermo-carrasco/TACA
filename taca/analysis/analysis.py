@@ -186,9 +186,10 @@ def prepare_sample_sheet(run_dir, run_type, ss_origin):
     :param str ss_origin: Path for the location of the original SampleSheet for the run
     """
     if run_type == 'HiSeq':
-        shutil.copy(samplesheet, run.run_dir)
+        shutil.copy(ss_origin, run_dir)
+        return True
     else:
-        raise NotImplementedError('This has not yet been implemented for {} runs'.format(run_type))
+        return False
 
 
 def prepare_x10_sample_sheet(run, ss_origin=None):

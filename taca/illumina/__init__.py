@@ -57,7 +57,7 @@ def _run_casava_task(args):
                     # In the case of [H/M]iSeq the final output-dir will be maned with
                     # a suffix which will be the length of the index
                     if opt == 'output-dir':
-                        opt = demux_folder
+                        val = demux_folder
                     cl.extend(['--{}'.format(opt), str(val)])
                 else:
                     cl.append('--{}'.format(option))
@@ -71,7 +71,7 @@ def _run_casava_task(args):
         misc.call_external_command(cl, with_log_files=True)
 
     # Go to <Unaligned> folder
-    with utils.chdir(demux_dir):
+    with chdir(os.path.join(fc_id, emux_folder)):
         # Perform make
         cl = ["make", "-j", str(num_cores)]
 
@@ -79,7 +79,7 @@ def _run_casava_task(args):
                       os.path.basename(os.path.basename(fc_dir)), datetime.now())))
         misc.call_external_command(cl, with_log_files=True)
 
-    return demux_dir
+    return demux_folder
 
 
 def _run_casava(fc_dir, run_type):
