@@ -1,5 +1,6 @@
 """ Submodule with Illumina-related code
 """
+import csv
 import glob
 import logging
 import os
@@ -9,6 +10,7 @@ from xml.etree import ElementTree as ET
 
 from taca.illumina impot utils
 from taca.utils import misc
+from taca.utils import parsers
 from taca.utils.config import CONFIG
 from taca.utils.filesystem import chdir
 
@@ -16,6 +18,84 @@ logger = logging.getLogger(__name__)
 
 finished_run_indicator = CONFIG.get('storage', {}).get('finished_run_indicator',
                                                        'RTAComplete.txt')
+
+
+def _run_casava_task(args):
+    """Perform demultiplexing and generate fastq.gz files for the current
+    flowecell using CASAVA (>1.8).
+    """
+    config = CONFIG['analysis']
+    bp = args.get('bp')
+    samples_group = args.get('samples')
+    base_mask = samples_group['base_mask']
+    samples = samples_group['samples']
+    fc_dir = args.get('fc_dir')
+    ss = 'SampleSheet_{bp}bp.csv'.format(bp=str(bp))
+    _demux_folder = config.get('bcl2fastq').get('options', {}).get(
+                           'output-dir', 'Unaligned')
+    demux_folder = '{}_{}bp'.format(_demux_folder, str(bp))
+    num_cores = config.get('bcl2fastq').get('options').get('num_cores')
+
+    #Create separate samplesheet and folder
+    with open(os.path.join(fc_dir, ss), 'w') as fh:
+        samplesheet = csv.DictWriter(fh, fieldnames=samples['fieldnames'], dialect='excel')
+        samplesheet.writeheader()
+        samplesheet.writerows(samples['samples'])
+
+    # Run configureBclToFastq
+    with chdir(fc_dir):
+        cl = [config.get('bcl2fastq').get(self.run_type)]
+        if config['bcl2fastq'].has_key('options'):
+            cl_options = config['bcl2fastq']['options']
+
+            # Append all options that appear in the configuration file to the main command.
+            # Options that require a value, i.e --use-bases-mask Y8,I8,Y8, will be returned
+            # as a dictionary, while options that doesn't require a value, i.e --no-lane-splitting
+            # will be returned as a simple string
+            for option in cl_options:
+                if isinstance(option, dict):
+                    opt, val = option.popitem()
+                    cl.extend(['--{}'.format(opt), str(val)])
+                else:
+                    cl.append('--{}'.format(option))
+            # In the case of [H/M]iSeq we may have several samplesheet files,
+            # built on runtime, so we have to specify them here
+            cl.extend(["--sample-sheet", ss])
+
+        logger.info(("Running configureBclToFastq.pl for run {} on {}".format(
+                      os.path.basename(os.path.basename(fc_dir)), datetime.now())))
+
+        misc.call_external_command(cl, with_log_files=True)
+
+    # Go to <Unaligned> folder
+    with utils.chdir(demux_dir):
+        # Perform make
+        cl = ["make", "-j", str(num_cores)]
+
+        logger.info(("Running make command for run {} on {}".format(
+                      os.path.basename(os.path.basename(fc_dir)), datetime.now())))
+        misc.call_external_command(cl, with_log_files=True)
+
+    return demux_dir
+
+
+def _run_casava(fc_dir, run_type):
+    """Prepare and call the task to perform demultiplexing and generation of
+    fastq.gz files for the current flowcell in using CASAVA (1.8).
+
+    :param str fc_dir: Directory of the flowcell
+    :param str run_type: Type of the run, i-e HiSeq or MiSeq
+    """
+    base_masks = utils.get_base_masks(fc_dir)
+
+    #Prepare the list of arguments to call configureBclToFastq
+    args_list = []
+    [args_list.append({'bp': k, 'samples': v, 'fc_dir': fc_dir, 'run_type': run_type}) \
+                        for k, v in base_masks.iteritems()]
+
+    unaligned_dirs = map(_run_casava_task, args_list)
+
+    return unaligned_dirs
 
 def _demultiplex_HiSeqX_flowcell(run):
     """Specific method for demultiplexing a HiSeqX flowcell
@@ -46,13 +126,14 @@ def _demultiplex_HiSeqX_flowcell(run):
         misc.call_external_command_detached(cl, with_log_files=True)
 
 
-def _demultiplex_flowcell(run):
+def _demultiplex_flowcell(run, run_type):
     """Sepecific method for demultiplexing a non-X10 flowcell, i.e [H/M]iSeq
 
     :param taca.illumina.Run run: Run/flowcell to be demultiplexed
+    :param str run_type: Type of the flowcell, i.e HiSeq or MiSeq
     """
     logger.info('Generating FASTQ files for run {}'.format(run.id))
-    demux_dirs = _run_casava(run.run_dir)
+    demux_dirs = _run_casava(run.run_dir, run.run_type)
     logger.info("Done generating fastq.gz files for {}".format(run.id))
     # Merge demultiplexing results into a single Unaligned folder
     utils.merge_demux_results(run.run_dir)
