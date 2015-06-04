@@ -8,7 +8,7 @@ import os
 from datetime import datetime
 from xml.etree import ElementTree as ET
 
-from taca.illumina impot utils
+from taca.illumina import utils
 from taca.utils import misc
 from taca.utils import parsers
 from taca.utils.config import CONFIG
@@ -31,10 +31,12 @@ def _run_casava_task(args):
     samples = samples_group['samples']
     fc_dir = args.get('fc_dir')
     ss = 'SampleSheet_{bp}bp.csv'.format(bp=str(bp))
-    _demux_folder = config.get('bcl2fastq').get('options', {}).get(
-                           'output-dir', 'Unaligned')
+    _demux_folder = 'Unaligned'
+    for option in CONFIG['analysis']['bcl2fastq']['options']:
+        if isinstance(option, dict) and option.get('output-dir'):
+            _demux_folder = option.get('output-dir')
     demux_folder = '{}_{}bp'.format(_demux_folder, str(bp))
-    num_cores = config.get('bcl2fastq').get('options').get('num_cores')
+    num_cores = config.get('make').get('num_cores')
 
     #Create separate samplesheet and folder
     with open(os.path.join(fc_dir, ss), 'w') as fh:
@@ -126,11 +128,10 @@ def _demultiplex_HiSeqX_flowcell(run):
         misc.call_external_command_detached(cl, with_log_files=True)
 
 
-def _demultiplex_flowcell(run, run_type):
+def _demultiplex_flowcell(run):
     """Sepecific method for demultiplexing a non-X10 flowcell, i.e [H/M]iSeq
 
     :param taca.illumina.Run run: Run/flowcell to be demultiplexed
-    :param str run_type: Type of the flowcell, i.e HiSeq or MiSeq
     """
     logger.info('Generating FASTQ files for run {}'.format(run.id))
     demux_dirs = _run_casava(run.run_dir, run.run_type)
@@ -197,7 +198,11 @@ class Run(object):
 
     @property
     def status(self):
-        _demux_dir = CONFIG['analysis']['bcl2fastq']['options']['output-dir']
+        _demux_dir = 'Demultiplexing'
+        for option in CONFIG['analysis']['bcl2fastq']['options']:
+            if isinstance(option, dict) and option.get('output-dir'):
+                _demux_dir = option.get('output-dir')
+        for
         if self.run_type == 'HiSeqX':
             demux_dir = os.path.join(self.run_dir, _demux_dir)
             if not os.path.exists(demux_dir):

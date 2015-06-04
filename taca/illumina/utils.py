@@ -1,5 +1,6 @@
 """ Divers utilities for Illumina runs processing """
 
+import csv
 import glob
 import os
 import shutil
@@ -16,13 +17,19 @@ from taca.utils.config import CONFIG
 finished_run_indicator = CONFIG.get('storage', {}).get('finished_run_indicator',
                                                        'RTAComplete.txt')
 
+def _last_index_read(directory):
+    """Parse the number of the highest index read from the RunInfo.xml
+    """
+    read_numbers = [int(read.get("Number", 0)) for read in parsers.get_read_configuration(directory) if read.get("IsIndexedRead", "") == "Y"]
+    return 0 if len(read_numbers) == 0 else max(read_numbers)
+
+
 def get_base_masks(rundir):
-	""" Return a set of base masks to be used when demultiplexing.
+    """ Return a set of base masks to be used when demultiplexing.
 
-	:param str rundir: Path to the run directory.
-	:returns list: Basemasks to be used based on the SampleSeet information.
-	"""
-
+    :param str rundir: Path to the run directory.
+    :returns list: Basemasks to be used based on the SampleSeet information.
+    """
     runsetup = parsers.get_read_configuration(rundir, sort=True)
     flowcell_id = parsers.get_flowcell_id(rundir)
     base_masks = {}
@@ -45,7 +52,7 @@ def get_base_masks(rundir):
         index_size = index_size
         group = index_size
         bm = []
-        per_index_size = index_size/(int(_last_index_read(rundir)) - 1)
+        per_index_size = index_size/(int(last_index_read(rundir)) - 1)
 
         for read in runsetup:
             cycles = read['NumCycles']
@@ -184,7 +191,7 @@ def merge_undemultiplexed_stats_metrics(u1, u2, fc_id):
 def merge_demux_results(fc_dir):
     """Merge results of demultiplexing from different demultiplexing folders
 
-	:param str fc_dir: Path to the flowcell directory.
+    :param str fc_dir: Path to the flowcell directory.
     """
     unaligned_dirs = glob.glob(os.path.join(fc_dir, '{}_*'.format(finished_run_indicator)))
     #If it is a MiSeq run, the fc_id will be everything after the -

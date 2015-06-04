@@ -47,11 +47,11 @@ def last_index_read(run):
 def get_flowcell_id(rundir):
     """Parese the RunInfo.xml and return the Flowcell ID
 
-	:param str rundir: Path to the run
-	:returns str: ID of the flowcell
+    :param str rundir: Path to the run
+    :returns str: ID of the flowcell
     """
-	assert os.path.exists(os.path.join(rundir, 'RunInfo.xml'), ("No RunInfo.xml found
-						  "for run {}".format(os.path.basename(rundir))))
+    assert os.path.exists(os.path.join(rundir, 'RunInfo.xml')), ("No RunInfo.xml found "
+                          "for run {}".format(os.path.basename(rundir)))
 
     run_info_file = os.path.join(rundir, "RunInfo.xml")
     flowcell_id = ''
