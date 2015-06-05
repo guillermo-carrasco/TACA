@@ -75,7 +75,7 @@ def qc_for_pooled_lane(lane,lb , und_thresh):
 
 
     if d['undet'] > (d['det']+d['undet']) * und_thresh / 100:
-        logger.warn("Lane {} has more than {}% undetermined indexes ({}%)".format(lane, und_tresh,d['undet']/(d['det']+d['undet'])*100))
+        logger.warn("Lane {} has more than {}% undetermined indexes ({}%)".format(lane, und_thresh,d['undet']/(d['det']+d['undet'])*100))
         return False
 
     return True
