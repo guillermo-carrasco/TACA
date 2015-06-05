@@ -187,8 +187,9 @@ def prepare_sample_sheet(run_dir, run_type, ss_origin):
     """
     shutil.copy(ss_origin, run_dir)
     if run_type == 'MiSeq':
-        miseq_ss = parser.MiSeqSampleSheet(os.path.basename(ss_origin))
-        miseq_ss.to_hiseq(parsers.get_flowcell_id(run_dir), write=True)
+        with chdir(run_dir):
+            miseq_ss = parsers.MiSeqSampleSheet(os.path.basename(ss_origin))
+            miseq_ss.to_hiseq(parsers.get_flowcell_id(run_dir), write=True)
     return True
 
 
@@ -360,5 +361,8 @@ def run_preprocessing(run):
         data_dirs = CONFIG.get('analysis').get('data_dirs')
         for data_dir in data_dirs:
             runs = glob.glob(os.path.join(data_dir, '1*XX'))
+            # Try MiSeq runs as well
+            if not runs:
+                runs = glob.glob(os.path.join(data_dir, '1*000000000*'))
             for _run in runs:
                 _process(Run(_run))

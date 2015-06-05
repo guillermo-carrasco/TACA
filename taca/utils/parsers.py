@@ -2,8 +2,10 @@
 """
 import csv
 import os
+import re
 import xml.etree.ElementTree as ET
 
+from collections import OrderedDict, defaultdict
 
 #######################################
 # Raw data status/stats files parsers #
