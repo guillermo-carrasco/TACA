@@ -179,25 +179,29 @@ def post_qc(run, qc_file, status):
     :param str qc_file: Path to file with information about transferred runs
     """
     already_seen=False
+    runname=os.path.basename(os.path.abspath(run))
+    shortrun=runname.split('_')[0] + unname.split('_')[-1]
     with open(qc_file, 'ab+') as f:
         f.seek(0)
         for row in f:
             #Rows have two columns: run and transfer date
-            if row.split('\t')[0] == os.path.basename(run): 
+            if row.split('\t')[0] == runname: 
                 already_seen=True
 
         if not already_seen:
             if status:
-                f.write("{}\tPASSED\n".format(os.path.basename(run)))
+                f.write("{}\tPASSED\n".format(runname))
             else:
-                sj="{} failed QC".format(os.path.basename(run))
+                sj="{} failed QC".format(runname)
                 cnt="""The run {run} has failed qc and will NOT be transfered to Nestor.
+
+                       The run might be available at : https://genomics-status.scilifelab.se/flowcells/{shortfc}
                        
                        To read the logs, run the following command on {server} 
                        grep -A30 "Checking run {run}" {log}
                        
                        To force the transfer : 
-                        taca analysis transfer {rundir} """.format(run=os.path.basename(run), log=CONFIG['log']['file'], server=os.uname()[1], rundir=run)
+                        taca analysis transfer {rundir} """.format(run=runname, shortfc=shortrun, log=CONFIG['log']['file'], server=os.uname()[1], rundir=run)
                 rcp=CONFIG['mail']['recipients']
                 misc.send_mail(sj, cnt, rcp)
                 f.write("{}\tFAILED\n".format(os.path.basename(run)))
