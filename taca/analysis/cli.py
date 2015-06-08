@@ -27,6 +27,6 @@ def transfer(rundir, analysis):
 
 @analysis.command()
 @click.argument('rundir')
-def save(rundir):
+def update-db(rundir):
     """saves the run to statusdb"""
     an.upload_to_statusdb(rundir)
