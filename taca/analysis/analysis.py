@@ -188,7 +188,7 @@ def post_qc(run, qc_file, status):
 
         if not already_seen:
             if status:
-                f.write("{}\tPASSED".format(os.path.basename(run)))
+                f.write("{}\tPASSED\n".format(os.path.basename(run)))
             else:
                 sj="{} failed QC".format(os.path.basename(run))
                 cnt="""The run {run} has failed qc and will NOT be transfered to Nestor.
@@ -200,7 +200,7 @@ def post_qc(run, qc_file, status):
                         taca analysis transfer {rundir} """.format(run=os.path.basename(run), log=CONFIG['log']['file'], server=os.uname()[1], rundir=run)
                 rcp=CONFIG['mail']['recipients']
                 misc.send_mail(sj, cnt, rcp)
-                f.write("{}\tFAILED".format(os.path.basename(run)))
+                f.write("{}\tFAILED\n".format(os.path.basename(run)))
 
 def upload_to_statusdb(run_dir):
     """
