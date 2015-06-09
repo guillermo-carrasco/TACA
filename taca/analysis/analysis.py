@@ -16,7 +16,7 @@ from taca.illumina import Run
 from taca.utils.filesystem import chdir, control_fastq_filename
 from taca.utils.config import CONFIG
 from taca.utils import misc
-from flowcell_parser.classes import XTenSampleSheetParser,XTenParser 
+from flowcell_parser.classes import XTenRunParametersParser,XTenSampleSheetParser,XTenParser 
 
 logger = logging.getLogger(__name__)
 
@@ -91,9 +91,40 @@ def transfer_run(run, analysis=True):
         tsv_writer.writerow([os.path.basename(run), str(datetime.now())])
     os.remove(os.path.join(run, 'transferring'))
 
+    #Now, let's move the run to nosync
+    archive_run(run)
+
     if analysis:
         trigger_analysis(run)
 
+def archive_run(run)
+    
+    rppath=os.path.join(run, 'runParameters.xml')
+    try:
+        rp=XTenRunParametersParser(os.path.join(run, 'runParameters.xml'))
+    except OSError:
+        logger.warn("Cannot find the runParameters.xml file at {}. This is quite unexpected. please archive the run {} manually".format(rppath, run))
+    else:
+        try:
+            #Works for recent control software
+            runtype=rp.data.["Setup"].get("Application Name")
+        except KeyError :
+            #should work for ancient control software
+            runtype=rp.data.get("Application Name")
+
+        if "HiSeq X" in runtype:
+            destination=CONFIG['storage']['archive_dir'][2]
+        elif "MiSeq" in runtype:
+            destination=CONFIG['storage']['archive_dir'][1]
+        elif "HiSeq" in runtype:
+            destination=CONFIG['storage']['archive_dir'][0]
+        else:
+            logger.warn("unrecognized runtype {}, cannot archive the run {}.".format(runtype, run)) 
+            destination=None
+
+        if destination:
+            logger.info('archiving run {}'.format(run))
+            os.move(os.path.abspath(run), os.path.join(destination, os.path.basename(os.path.abspath(run)))))
 
 def trigger_analysis(run_id):
     """ Trigger the analysis of the flowcell in the analysis sever.
@@ -161,13 +192,13 @@ def prepare_sample_sheet(run):
         return False
     try:
         with open(FCID_samplesheet_dest, 'wb') as fcd:
-            fcd.write(ss_reader.generate_clean_samplesheet(fields_to_remove=['index2'], rename_samples=False))
+            fcd.write(ss_reader.generate_clean_samplesheet(fields_to_remove=['index2'], rename_samples=True))
     except Exception as e:
         logger.error(e.text)
         return False
 
 
-    # everything ended corretly
+    # everything ended correctly
     return True
 
 
