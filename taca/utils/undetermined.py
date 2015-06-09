@@ -198,8 +198,8 @@ def check_index_freq(run, lane, freq_tresh):
     total=sum(barcodes.values())
     count, bar = max((v, k) for k, v in barcodes.items())
     if total * freq_tresh / 100<count:
-        logger.warn("The most frequent barcode of lane {} ({}) found in {} represents {}%, "
-                "which is over the threshold of {}%".format(lane, bar, fastqfile, count / total * 100, freq_tresh))
+        logger.warn("The most frequent barcode of lane {} ({}) represents {}%, "
+                "which is over the threshold of {}%".format(lane, bar, count * 100 / total , freq_tresh))
         return False
     else:
         logger.info("Most frequent undetermined index represents less than {}% of the total, lane {} looks fine.".format(freq_tresh, lane))
