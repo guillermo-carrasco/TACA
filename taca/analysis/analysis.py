@@ -180,7 +180,7 @@ def post_qc(run, qc_file, status):
     """
     already_seen=False
     runname=os.path.basename(os.path.abspath(run))
-    shortrun=runname.split('_')[0] + unname.split('_')[-1]
+    shortrun=runname.split('_')[0] + '_' +runname.split('_')[-1]
     with open(qc_file, 'ab+') as f:
         f.seek(0)
         for row in f:

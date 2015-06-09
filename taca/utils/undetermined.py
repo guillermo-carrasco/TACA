@@ -41,10 +41,10 @@ def check_undetermined_status(run, und_tresh=10, q30_tresh=75, freq_tresh=40, po
         workable_lanes=get_workable_lanes(run, dex_status)
         for lane in workable_lanes:
             if is_unpooled_lane(ss,lane):
+                rename_undet(run, lane, samples_per_lane)
                 if check_index_freq(run,lane, freq_tresh):
                     if lb :
                         if first_qc_check(lane,lb, und_tresh, q30_tresh):
-                            rename_undet(run, lane, samples_per_lane)
                             link_undet_to_sample(run, lane, path_per_lane)
                             status=True
                         else:
@@ -178,7 +178,7 @@ def check_index_freq(run, lane, freq_tresh):
 
     else:
         open(os.path.join(run, dmux_folder,'index_count_L{}.tsv'.format(lane)), 'a').close()
-        for fastqfile in glob.glob(os.path.join(run, dmux_folder, 'Undetermined_*_L0?{}_R1*'.format(lane))):
+        for fastqfile in glob.glob(os.path.join(run, dmux_folder, '*Undetermined*_L0?{}_R1*'.format(lane))):
             logger.info("working on {}".format(fastqfile))
             zcat=subprocess.Popen(['zcat', fastqfile], stdout=subprocess.PIPE)
             sed=subprocess.Popen(['sed', '-n', "1~4p"],stdout=subprocess.PIPE, stdin=zcat.stdout)
