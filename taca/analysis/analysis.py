@@ -97,7 +97,7 @@ def transfer_run(run, analysis=True):
     if analysis:
         trigger_analysis(run)
 
-def archive_run(run)
+def archive_run(run):
     
     rppath=os.path.join(run, 'runParameters.xml')
     try:
