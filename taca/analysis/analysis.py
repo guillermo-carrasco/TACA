@@ -124,7 +124,7 @@ def archive_run(run):
 
         if destination:
             logger.info('archiving run {}'.format(run))
-            os.move(os.path.abspath(run), os.path.join(destination, os.path.basename(os.path.abspath(run)))))
+            os.move(os.path.abspath(run), os.path.join(destination, os.path.basename(os.path.abspath(run))))
 
 def trigger_analysis(run_id):
     """ Trigger the analysis of the flowcell in the analysis sever.
