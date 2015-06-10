@@ -58,7 +58,7 @@ def cleanup_processing(days):
                         logger.info(("Run {} has not been transferred to the analysis "
                             "server yet, not archiving".format(run)))
         #Remove old runs from archiving dirs
-        for archive_dir in CONFIG.get('storage').get('archive_dirs'):
+        for archive_dir in CONFIG.get('storage').get('archive_dirs').values():
             logger.info('Removing old runs in {}'.format(archive_dir))
             with filesystem.chdir(archive_dir):
                 for run in [r for r in os.listdir(archive_dir) if re.match(filesystem.RUN_RE, r)]:

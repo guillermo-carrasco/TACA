@@ -107,17 +107,17 @@ def archive_run(run):
     else:
         try:
             #Works for recent control software
-            runtype=rp.data.["Setup"].get("Application Name")
+            runtype=rp.data["Setup"].get("Application Name")
         except KeyError :
             #should work for ancient control software
             runtype=rp.data.get("Application Name")
 
         if "HiSeq X" in runtype:
-            destination=CONFIG['storage']['archive_dir'][2]
+            destination=CONFIG['storage']['archive_dir']['HiSeqX']
         elif "MiSeq" in runtype:
-            destination=CONFIG['storage']['archive_dir'][1]
+            destination=CONFIG['storage']['archive_dir']['MiSeq']
         elif "HiSeq" in runtype:
-            destination=CONFIG['storage']['archive_dir'][0]
+            destination=CONFIG['storage']['archive_dir']['HiSeq']
         else:
             logger.warn("unrecognized runtype {}, cannot archive the run {}.".format(runtype, run)) 
             destination=None
