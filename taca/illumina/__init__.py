@@ -65,7 +65,7 @@ def _run_casava_task(args):
             # built on runtime, so we have to specify them here, as well as the
             # basemask to be used
             cl.extend(["--sample-sheet", ss])
-            cl.extend(["--use-bases-mask", base_mask])
+            cl.extend(["--use-bases-mask", ','.join(base_mask)])
 
         logger.info(("Running configureBclToFastq.pl for run {} on {}".format(
                       os.path.basename(os.path.basename(fc_dir)), datetime.now())))
