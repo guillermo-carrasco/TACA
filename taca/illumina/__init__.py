@@ -52,8 +52,8 @@ def _run_casava_task(args):
 
             # Append all options that appear in the configuration file to the main command.
             for option in cl_options:
-                if isinstance(option, dict):
-                    opt, val = option.popitem()
+                if isinstance(option, dict) and option:
+                    opt, val = option.items()[0]
                     # In the case of [H/M]iSeq the final output-dir will be maned with
                     # a suffix which will be the length of the index
                     if opt == 'output-dir':
@@ -62,8 +62,10 @@ def _run_casava_task(args):
                 else:
                     cl.append('--{}'.format(option))
             # In the case of [H/M]iSeq we may have several samplesheet files,
-            # built on runtime, so we have to specify them here
+            # built on runtime, so we have to specify them here, as well as the
+            # basemask to be used
             cl.extend(["--sample-sheet", ss])
+            cl.extend(["--use-bases-mask", base_mask])
 
         logger.info(("Running configureBclToFastq.pl for run {} on {}".format(
                       os.path.basename(os.path.basename(fc_dir)), datetime.now())))
