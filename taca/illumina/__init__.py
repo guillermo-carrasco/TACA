@@ -71,7 +71,7 @@ def _run_casava_task(args):
         misc.call_external_command(cl, with_log_files=True)
 
     # Go to <Unaligned> folder
-    with chdir(os.path.join(fc_id, emux_folder)):
+    with chdir(os.path.join(fc_dir, demux_folder)):
         # Perform make
         cl = ["make", "-j", str(num_cores)]
 
