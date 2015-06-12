@@ -193,7 +193,10 @@ def merge_demux_results(fc_dir):
 
     :param str fc_dir: Path to the flowcell directory.
     """
-    unaligned_dirs = glob.glob(os.path.join(fc_dir, '{}_*'.format(finished_run_indicator)))
+    for option in CONFIG['analysis']['bcl2fastq']['options']:
+        if isinstance(option, dict) and option.get('output-dir'):
+            _demux_folder = option.get('output-dir')
+    unaligned_dirs = glob.glob(os.path.join(fc_dir, '{}_*'.format(_demux_folder)))
     #If it is a MiSeq run, the fc_id will be everything after the -
     if '-' in os.path.basename(fc_dir):
         fc_id = os.path.basename(fc_dir).split('_')[-1]
