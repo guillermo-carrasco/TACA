@@ -14,8 +14,6 @@ from taca.utils import parsers
 from taca.utils import filesystem
 from taca.utils.config import CONFIG
 
-finished_run_indicator = CONFIG.get('storage', {}).get('finished_run_indicator',
-                                                       'RTAComplete.txt')
 
 def last_index_read(directory):
     """Parse the number of the highest index read from the RunInfo.xml
@@ -204,7 +202,7 @@ def merge_demux_results(fc_dir):
     else:
         fc_id = os.path.basename(fc_dir).split('_')[-1][1:]
     basecall_dir = 'Basecall_Stats_{fc_id}'.format(fc_id=fc_id)
-    merged_dir = os.path.join(fc_dir, finished_run_indicator)
+    merged_dir = os.path.join(fc_dir, _demux_folder)
     merged_basecall_dir = os.path.join(merged_dir, basecall_dir)
     #Create the final Unaligned folder and copy there all configuration files
     filesystem.create_folder(os.path.join(merged_dir, basecall_dir))
