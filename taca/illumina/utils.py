@@ -3,6 +3,7 @@
 import csv
 import glob
 import os
+import re
 import shutil
 import xml.etree.ElementTree as ET
 
